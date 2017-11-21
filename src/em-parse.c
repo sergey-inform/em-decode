@@ -9,8 +9,10 @@
 #include <argp.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h> //malloc()
 #include <assert.h>
+#include <unistd.h>
 #include <inttypes.h>
 #include <sysexits.h>
 
@@ -36,6 +38,7 @@ struct args {
 	char **infiles;
 	char *outfile;
 	unsigned crate_id;
+	bool no_output;
 };
 
 
@@ -60,13 +63,15 @@ parse_opt(int key, char *arg, struct argp_state *state)
 				argp_usage(state);
 			}
 			crate_id = strtoul(arg, NULL, 0 /*base*/);
+
+			// check CrateID
 			if (crate_id < 0) {
 				argp_failure(state, EX_USAGE, EINVAL,
 					"CrateID should be unsigned integer"\
-					", but '%s' is given.",
-					arg);
-
+					", but '%s' is given.",	arg);
 			}
+			args->crate_id = (unsigned int)crate_id;
+
 			// consume the rest of arguments as filenames
 			args->infiles = &state->argv[state->next];
 			state->next = state->argc;
@@ -109,6 +114,7 @@ void dump_args( struct args * args)
 int check_infiles( char ** infiles)
 /** Check input files exists and readable */
 {
+
 	return 0;
 }
 
@@ -116,18 +122,33 @@ int check_infiles( char ** infiles)
 int main(int argc, char *argv[])
 {
 	struct args args = {0};
+	FILE * const outfile;
+	FILE ** const infiles;
+
 	// Defaults
 	args.outfile = "-";
 	args.infiles = (char *[]) {"-", NULL};	
 	
 	argp_parse(&argp, argc, argv, 0, 0, &args);
-	
 	//dump_args(&args);
 	
+	if ( !strcmp(args.outfile, "-") ) { // output to stdout
+		if (isatty(fileno(stdout))) { // stdout is a tty
+			args.no_output = true;
+			fprintf(stderr, "Binary output to terminal, srsly? Output suppressed.\n")
+		}
+		else {
+			outfile = fdopen(dup(fileno(stdout)), "wb"); // force binary output ...
+					/*... for compatibility with lame systems */
+		}
+	}
+
 	if ( check_infiles(args.infiles)) {
-		exit(1);
+		
 	}
 		
+	
+	fclose(outfile);
 
 	exit(0);
 }

@@ -9,6 +9,7 @@
 #include <argp.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <error.h>
 #include <string.h>
 #include <stdlib.h> //malloc()
 #include <assert.h>
@@ -115,19 +116,11 @@ void dump_args( struct args * args)
 }
 
 
-int check_infile( char * infile)
-/** Check input files exists and readable */
-{
-
-	return 0;
-}
-
-
 int main(int argc, char *argv[])
 {
 	struct args args = {0};
-	FILE * outfile;
-	FILE * const infile;
+	FILE * outfile = NULL;
+	FILE * infile = NULL;
 
 	// Defaults
 	args.outfile = "-";
@@ -136,24 +129,45 @@ int main(int argc, char *argv[])
 	argp_parse(&argp, argc, argv, 0, 0, &args);
 	dump_args(&args);
 	
-	if ( !strcmp(args.outfile, "-") ) { // output to stdout
-		if (isatty(fileno(stdout))) { // stdout is a tty
-			args.no_output = true;
+	// outfile
+	if ( !strcmp(args.outfile, "-") ) {  // output to stdout
+		if (isatty(fileno(stdout))) {  // stdout printed on terminal
 			fprintf(stderr, "Binary output to terminal, srsly? Output suppressed.\n");
 		}
 		else {
 			outfile = fdopen(dup(fileno(stdout)), "wb"); // force binary output ...
 					/*... for compatibility with lame systems */
 		}
+	} else {
+		outfile = fopen( args.outfile, "wb");  // rewrite outfile if exists
+		if (outfile == NULL) {
+			error(EX_IOERR, errno, "can't open file '%s'", args.outfile);
+		}
 	}
 
-	if ( check_infile(args.infile)) {
-		
+	// infile
+	if ( !strcmp(args.infile, "-") ) {  // get input from stdin
+		if (isatty(fileno(stdin))) {  // stdin is a terminal
+			error(EX_USAGE, errno, "No input file specified, stdin is a terminal. RTFM.\n");
+		}
+		else {
+			infile = fdopen(dup(fileno(stdin)), "wb");
+		}
+	} else {
+		infile = fopen( args.infile, "rbm");
+		if (infile == NULL) {
+			error(EX_NOINPUT, errno, "can't open file '%s'", args.infile);
+		}
 	}
+
 		
+
+	em5_parse( infile, outfile, &args);
+
 	
-	fclose(outfile);
+	if (infile)	fclose(infile);
+	if (outfile)	fclose(outfile);
 
-	exit(0);
+	return 0;
 }
 

@@ -18,6 +18,7 @@ enum em5_fsm_state {
 	, END	/* end of readout */
 	//, XX 	/* synchronisation data */
 	, SPOIL /* corrupted event */
+	, BUG
 	};
 
 static const char *em5_fsm_statestr[] = {
@@ -27,11 +28,13 @@ static const char *em5_fsm_statestr[] = {
 	, [END] = "END"
 	//
 	, [SPOIL] = "SPOIL"
+	, [BUG] = "BUG"
 	};
 
 
 enum em5_fsm_err{
 	FSM_OK
+	, DUP
 	, ZEROES, ONES
 	, NO_FE, NO_BE, NO_1F
 	, WRONG_LEN_1F
@@ -42,6 +45,7 @@ enum em5_fsm_err{
 
 static const char *em5_fsm_errstr[] = {
 	[FSM_OK] = "No errors"
+	, [DUP] = "Duplicate word."
 	, [ZEROES] = "A zero word."
 	, [ONES] = "A word with all ones."
 	, [NO_FE]= "Sudden new event (0xBE)."

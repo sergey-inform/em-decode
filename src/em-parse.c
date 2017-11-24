@@ -143,12 +143,12 @@ Prints errors/debug info to stderr.
 		//FIXME: check err
 
 		if(args->debug) {
-			fprintf(stderr, "%06lx  %04x %04x\n"
+			fprintf(stderr, "%06lx  %04x %04x %6s %s\n"
 				,wofft
 				,wrd.data
 				,wrd.addr
-				//,stm_state
-				//,stm_info
+				,em5_fsm_statestr[fsm.state]
+				,err ? em5_fsm_errstr[err] : ""
 				);
 		}
 

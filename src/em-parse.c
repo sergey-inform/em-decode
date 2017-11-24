@@ -128,7 +128,8 @@ Prints errors/debug info to stderr.
 	size_t bytes;
 	emword wrd;
 
-	struct em5_fsm_state fsm_state = {0};
+	struct em5_fsm fsm = {0};
+	enum em5_fsm_err err;
 
 	while (bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)) 
 	{
@@ -137,7 +138,9 @@ Prints errors/debug info to stderr.
 			break;
 		}
 		
-//		err = em5_fsm(&fsm_state, wrd);
+		err = em5_fsm_next(&fsm, wrd);
+
+		//FIXME: check err
 
 		if(args->debug) {
 			fprintf(stderr, "%06lx  %04x %04x\n"

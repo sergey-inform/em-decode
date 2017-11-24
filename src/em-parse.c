@@ -17,9 +17,12 @@
 #include <inttypes.h>
 #include <sysexits.h>
 
+#include "em5-fsm.h"
+
+
 const char *argp_program_version = "em-parse 2.0";
 const char *argp_program_bug_address = "\"Sergey Ryzhikov\" <sergey-inform@ya.ru>";
-static char doc[] = "Parse EuroMISS raw data file, output valid em-event structures.\n" \
+static char doc[] = "\nParse EuroMISS raw data file, output valid em-event structures.\n" \
 	"\v How to use:\n" \
 	"Use --verbose and --debug flags to understand what's going on." \
 	"...\n.";  // FIXME
@@ -27,7 +30,7 @@ static char args_doc[] = "CrateID [FILENAME]";
 
 static struct argp_option options[] = { 
 	{0,0,0,0, "CrateID is an integer number, decimal or hex with '0x' prefix." },
-	{0,0,0,0, "If no FILENAME, wait for data in stdin." },
+	{0,0,0,0, "If no FILENAME, waits for data in stdin." },
 	{0,0,0,0, "Options:" },
 	{ "debug", 'd', 0, 0, "Interprete input word by word."},
 	{ "verbose", 'v', 0, 0, "Trace all events to stderr."},
@@ -112,7 +115,49 @@ void dump_args( struct args * args)
 
 	printf("\n");
 	fflush(stdout);
+}
 
+
+int process_infile( FILE * infile, FILE * outfile, struct args * args)
+/** Process data with em5 state machine. 
+Generates em-event structures and put them to outfile.
+Prints errors/debug info to stderr.
+*/
+{
+	size_t wofft;
+	size_t bytes;
+	emword wrd;
+
+	struct em5_fsm_state fsm_state = {0};
+
+	while (bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)) 
+	{
+		if (bytes != sizeof(emword)) {
+			//ERR FILE_LEN_ODD 
+			break;
+		}
+		
+//		err = em5_fsm(&fsm_state, wrd);
+
+		if(args->debug) {
+			fprintf(stderr, "%06lx  %04x %04x\n"
+				,wofft
+				,wrd.data
+				,wrd.addr
+				//,stm_state
+				//,stm_info
+				);
+		}
+
+		wofft += 1;
+	}
+
+
+	if (args->stats) {
+		// print stats
+	}
+
+	return 0; 
 }
 
 
@@ -121,13 +166,14 @@ int main(int argc, char *argv[])
 	struct args args = {0};
 	FILE * outfile = NULL;
 	FILE * infile = NULL;
+	int err;
 
 	// Defaults
 	args.outfile = "-";
 	args.infile = "-";	
 	
 	argp_parse(&argp, argc, argv, 0, 0, &args);
-	dump_args(&args);
+//	dump_args(&args);
 	
 	// outfile
 	if ( !strcmp(args.outfile, "-") ) {  // output to stdout
@@ -160,14 +206,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
-		
 
-	em5_parse( infile, outfile, &args);
+	err = process_infile(infile, outfile, &args);
 
-	
 	if (infile)	fclose(infile);
 	if (outfile)	fclose(outfile);
 
-	return 0;
+	return err;
 }
 

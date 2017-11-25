@@ -1,6 +1,13 @@
 #ifndef EM5_FSM_H
 #define EM5_FSM_H
 
+/* Workaround for gcc -Wunused-variable */
+#ifdef __GNUC__
+#define UNUSED __attribute__ ((unused))
+#else
+#define UNUSED
+#endif
+
 typedef union {
 	unsigned int whole;
 	struct {
@@ -13,22 +20,26 @@ typedef union {
 
 enum em5_fsm_state {
 	INIT
-	, PCHI	/* readout */
-	, PCHN	/* enumerate modules */
+	, PCHI	/* begin readout */
+	, PCHN	/* begin enumerate modules */
+	, DATA  /* regular data word for PCHI or PCHN */
+	, STAT  /* miss status word */
 	, END	/* end of readout */
 	//, XX 	/* synchronisation data */
-	, SPOIL /* corrupted event */
-	, BUG
+	, CORRUPT /* corrupted event data */
+	, BUG /* fsm bug */
 	};
 
-static const char *em5_fsm_statestr[] = {
+static const char UNUSED *em5_fsm_statestr[] = {
 	[INIT] = "INIT"
 	, [PCHI] = "PCHI"
 	, [PCHN] = "PCHN"
+	, [DATA] = "-"
+	, [STAT] = "STATS"
 	, [END] = "END"
 	//
-	, [SPOIL] = "SPOIL"
-	, [BUG] = "BUG"
+	, [CORRUPT] = "XXX"
+	, [BUG] = "FSM_BUG"
 	};
 
 
@@ -43,7 +54,7 @@ enum em5_fsm_err{
 	, MAX_EM5_FSM_ERR // the last element
 	};
 
-static const char *em5_fsm_errstr[] = {
+static const char UNUSED *em5_fsm_errstr[] = {
 	[FSM_OK] = "No errors"
 	, [DUP] = "Duplicate word."
 	, [ZEROES] = "A zero word."

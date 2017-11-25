@@ -99,7 +99,6 @@ static struct argp argp = { options, parse_opt, args_doc, doc };
 void dump_args( struct args * args) 
 /** Print command line args */
 {
-	int j;
 	printf(	"outfile %s \n" \
 		"infile %s \n" \
 		"CrateId %d \n" \
@@ -131,7 +130,7 @@ Prints errors/debug info to stderr.
 	struct em5_fsm fsm = {0};
 	enum em5_fsm_err err;
 
-	while (bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)) 
+	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
 		if (bytes != sizeof(emword)) {
 			//ERR FILE_LEN_ODD 
@@ -143,7 +142,7 @@ Prints errors/debug info to stderr.
 		//FIXME: check err
 
 		if(args->debug) {
-			fprintf(stderr, "%06lx  %04x %04x %6s %s\n"
+			fprintf(stderr, "%06lx  %04x %04x  %-6s %s\n"
 				,wofft
 				,wrd.data
 				,wrd.addr

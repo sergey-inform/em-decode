@@ -156,7 +156,13 @@ Prints errors/debug info to stderr.
 
 
 	if (args->stats) {
-		// print stats
+		for (int i = FSM_EVENT; i<MAX_EM5_FSM_RET; i++) {
+			if(em5_fsm_retstr[i] && fsm.ret_cnt[i])
+				fprintf(stderr, "%d\t %s \n"
+					, fsm.ret_cnt[i]
+					, em5_fsm_retstr[i]
+					);
+		}
 	}
 
 	return 0; 

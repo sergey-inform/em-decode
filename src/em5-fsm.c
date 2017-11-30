@@ -79,7 +79,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 //			break;
 
 		default:
-			if ((wrd.byte[0] & 0x1F) < 20) {  // data word
+			if ((wrd.byte[0] & 0x1F) <= EM_MAX_MODULE_NUM) {  // data word
 				if (cur_state == PCHI || cur_state == PCHN || cur_state == DATA) {
 					new_state = DATA;
 					fsm->evt.cnt += 1;
@@ -111,7 +111,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 	
 	fsm->state = new_state;
 	fsm->prev = wrd;
-	if (ret) fsm->ret_cnt += 1;
+	if (ret) fsm->ret_cnt[ret] += 1;
 
 	return ret;
 } 

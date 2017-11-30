@@ -49,6 +49,8 @@ enum em5_fsm_ret{
 	, MAX_EM5_FSM_RET // the last element
 	};
 
+
+// TODO: err texts: ERR_EM_ADDR_ORDER
 static const char UNUSED *em5_fsm_retstr[] = {
 	[FSM_OK] = "-"
 	, [FSM_EVENT] = "Event"
@@ -68,7 +70,7 @@ static const char UNUSED *em5_fsm_retstr[] = {
 struct em5_fsm {
 	enum em5_fsm_state state;
 	emword prev;  // previous word
-	unsigned ret_cnt; //[MAX_EM5_FSM_RET];  // error counters
+	unsigned ret_cnt[MAX_EM5_FSM_RET];  // error counters
 	struct em5_fsm_event{
 		unsigned cnt;  // event word counter
 		unsigned prev_mod;  // previous module address

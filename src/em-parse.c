@@ -128,7 +128,7 @@ Prints errors/debug info to stderr.
 	emword wrd;
 
 	struct em5_fsm fsm = {0};
-	enum em5_fsm_err err;
+	enum em5_fsm_ret ret;
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
@@ -137,7 +137,7 @@ Prints errors/debug info to stderr.
 			break;
 		}
 		
-		err = em5_fsm_next(&fsm, wrd);
+		ret = em5_fsm_next(&fsm, wrd);
 
 		//FIXME: check err
 
@@ -147,7 +147,7 @@ Prints errors/debug info to stderr.
 				,wrd.data
 				,wrd.addr
 				,em5_fsm_statestr[fsm.state]
-				,err ? em5_fsm_errstr[err] : ""
+				,em5_fsm_retstr[ret]
 				);
 		}
 

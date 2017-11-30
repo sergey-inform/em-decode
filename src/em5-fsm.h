@@ -8,15 +8,7 @@
 #define UNUSED
 #endif
 
-typedef union {
-	unsigned int whole;
-	struct {
-		unsigned short addr;
-		unsigned short data;
-	};
-	unsigned char byte[4];
-} emword;
-
+#include "em.h"
 
 enum em5_fsm_state {
 	INIT
@@ -43,19 +35,24 @@ static const char UNUSED *em5_fsm_statestr[] = {
 	};
 
 
-enum em5_fsm_err{
+enum em5_fsm_ret{
 	FSM_OK
+	, FSM_EVENT
+//	, SYNC_EVENT
+	, ERROR
 	, DUP
 	, ZEROES, ONES
 	, NO_FE, NO_BE, NO_1F
 	, WRONG_LEN_1F
 	, UNKNOWN_WORD
 	, ADDR_ORDER
-	, MAX_EM5_FSM_ERR // the last element
+	, MAX_EM5_FSM_RET // the last element
 	};
 
-static const char UNUSED *em5_fsm_errstr[] = {
-	[FSM_OK] = "No errors"
+static const char UNUSED *em5_fsm_retstr[] = {
+	[FSM_OK] = "-"
+	, [FSM_EVENT] = "Event"
+//	, [SYNC_EVENT] = "Sync"
 	, [DUP] = "Duplicate word."
 	, [ZEROES] = "A zero word."
 	, [ONES] = "A word with all ones."
@@ -70,10 +67,16 @@ static const char UNUSED *em5_fsm_errstr[] = {
 
 struct em5_fsm {
 	enum em5_fsm_state state;
-	emword prev;  // previous word //TODO: backlog (several words)
-	unsigned errcnt[MAX_EM5_FSM_ERR]; // error counters
+	emword prev;  // previous word
+	unsigned ret_cnt; //[MAX_EM5_FSM_RET];  // error counters
+	struct em5_fsm_event{
+		unsigned cnt;  // event word counter
+		unsigned prev_mod;  // previous module address
+		unsigned mod_cnt[EM_MAX_MODULE_NUM]; // word counter per module
+		unsigned data[EM_MAX_MODULE_NUM];  // event data offset //FIXME: use 32-bit unsigned int
+		} evt; 
 	};
 
-enum em5_fsm_err em5_fsm_next(struct em5_fsm *, emword);
+enum em5_fsm_ret em5_fsm_next(struct em5_fsm *, emword);
 
 #endif /* EM5_FSM_H */

@@ -76,6 +76,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 //TODO
 //		case 0xXX:  //sync event
 //			new_state = cur_state;  //invisible
+//			ret = SYNC_EVENT;
 //			break;
 
 		default:

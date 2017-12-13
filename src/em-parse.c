@@ -17,7 +17,10 @@
 #include <inttypes.h>
 #include <sysexits.h>
 
+#include <assert.h>
+
 #include "em5-fsm.h"
+#include "uDAQ.h"
 
 
 const char *argp_program_version = "em-parse 2.0";
@@ -213,6 +216,7 @@ int main(int argc, char *argv[])
 			error(EX_NOINPUT, errno, "can't open file '%s'", args.infile);
 		}
 	}
+
 
 
 	err = process_infile(infile, outfile, &args);

@@ -71,6 +71,7 @@ struct em5_fsm {
 	enum em5_fsm_state state;
 	emword prev;  // previous word
 	unsigned ret_cnt[MAX_EM5_FSM_RET];  // error counters
+	unsigned sync_ts;  // last sync event timestamp //FIXME: use 32-bit int;
 	struct em5_fsm_event{
 		unsigned cnt;  // event word counter
 		unsigned prev_mod;  // previous module address

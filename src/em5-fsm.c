@@ -1,10 +1,9 @@
-
 //#include <stdio.h>
 
 #include "em.h"
 #include "em5-fsm.h"
 
-#include <string.h>  //memset
+#include <string.h>  // memset
 
 
 enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
@@ -23,7 +22,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 	if (wrd.whole == ~0x0U) 
 		ret = ONES;
 	
-	if (ret >= ERROR) {
+	if (ret >= FSM_ERROR) {
 		new_state = CORRUPT;
 	}
 	else {
@@ -47,9 +46,11 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 				new_state = CORRUPT;
 				break;
 			}
+			
+			fsm->evt.ts = wrd.data; //save timestamp low
 			break;
 
-		case 0x1F:  //miss status word (in the end of event)
+		case 0x1F:  //MISS status word (in the end of event)
 			if (cur_state == PCHI || cur_state == PCHN || cur_state == DATA || cur_state == CORRUPT) {
 				new_state = STAT;
 				//(wrd.data & EM_STATUS_COUNTER);
@@ -63,19 +64,22 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 
 		case 0xFE:  //end event
 			if (cur_state == STAT) {
+				ret = FSM_EVENT;	
 				new_state = END;
-				// FIXME:get timestamp, 
-				// FIXME: send data to stdout
 			}
 			else {
 				ret = NO_BE;
 				new_state = CORRUPT;
+				break;
 			}
+
+			fsm->evt.ts += wrd.data << 16; //save timestamp high
 			break;
 
 //TODO
 //		case 0xXX:  //sync event
 //			new_state = cur_state;  //invisible
+//			fsm->sync_ts = ...
 //			ret = SYNC_EVENT;
 //			break;
 
@@ -86,10 +90,8 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 					fsm->evt.cnt += 1;
 
 					fsm->evt.mod_cnt[EM_ADDR_MOD(wrd.addr)] += 1;
-
 				
-					// check [ADDR_ORDER}
-					// FIXME: save data
+					//FIXME: check [ADDR_ORDER}
 
 				}
 				else if ( cur_state == CORRUPT) {

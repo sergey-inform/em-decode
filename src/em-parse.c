@@ -120,14 +120,14 @@ void dump_args( struct args * args)
 }
 
 
-int process_infile( FILE * infile, FILE * outfile, struct args * args)
+int em_parse( FILE * infile, FILE * outfile, struct args * args)
 /** Process data with em5 state machine. 
-Generates em-event structures and put them to outfile.
+Generates daq_event_info structures and put them to outfile.
 Prints errors/debug info to stderr.
 */
 {
-	size_t wofft;
-	size_t bytes;
+	size_t wofft = 0;
+	size_t bytes = 0;
 	emword wrd;
 
 	struct em5_fsm fsm = {0};
@@ -142,30 +142,38 @@ Prints errors/debug info to stderr.
 		
 		ret = em5_fsm_next(&fsm, wrd);
 
-		//FIXME: check err
-
-		if(args->debug) {
+		if (args->debug && ! args->quiet) {
 			fprintf(stderr, "%06lx  %04x %04x  %-6s %s\n"
 				,wofft
 				,wrd.data
 				,wrd.addr
-				,em5_fsm_statestr[fsm.state]
+				,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
 				,em5_fsm_retstr[ret]
 				);
+		}
+		
+		if (ret == FSM_EVENT) {
+			//TODO: output event_info to outfile
+
+			if (args->verbose) {
+				fprintf(stderr, "# Event %d\tts: %u \n"
+				, fsm.ret_cnt[FSM_EVENT]
+				, fsm.evt.ts
+				);
+			}
+
 		}
 
 		wofft += 1;
 	}
 
 
-	if (args->stats) {
-		for (int i = FSM_EVENT; i<MAX_EM5_FSM_RET; i++) {
-			if(em5_fsm_retstr[i] && fsm.ret_cnt[i])
-				fprintf(stderr, "%d\t %s \n"
-					, fsm.ret_cnt[i]
-					, em5_fsm_retstr[i]
-					);
-		}
+	for (int i = FSM_EVENT; i<MAX_EM5_FSM_RET; i++) {
+		if(em5_fsm_retstr[i] && fsm.ret_cnt[i])
+			fprintf(stderr, "%d\t %s \n"
+				, fsm.ret_cnt[i]
+				, em5_fsm_retstr[i]
+				);
 	}
 
 	return 0; 
@@ -208,7 +216,7 @@ int main(int argc, char *argv[])
 			error(EX_USAGE, errno, "No input file specified, stdin is a terminal. RTFM.\n");
 		}
 		else {
-			infile = fdopen(dup(fileno(stdin)), "wb");
+			infile = fdopen(dup(fileno(stdin)), "rb");
 		}
 	} else {
 		infile = fopen( args.infile, "rbm");
@@ -219,7 +227,7 @@ int main(int argc, char *argv[])
 
 
 
-	err = process_infile(infile, outfile, &args);
+	err = em_parse(infile, outfile, &args);
 
 	if (infile)	fclose(infile);
 	if (outfile)	fclose(outfile);

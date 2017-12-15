@@ -129,6 +129,7 @@ Prints errors/debug info to stderr.
 
 	struct em5_fsm fsm = {0};
 	enum em5_fsm_ret ret;
+	int len_diff;
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
@@ -160,14 +161,16 @@ Prints errors/debug info to stderr.
 		}
 		
 		if (ret == FSM_EVENT) {
-			//TODO: output event_info to outfile
+			//FIXME: output event_info to outfile
+
+			len_diff = (int)(fsm.evt.len & EM_STATUS_COUNTER) - fsm.evt.len_1f;
 
 			if (args->verbose) {
-				fprintf(stderr, "# Event %d\tts: %u\tlen: %d\tlen_1f: %d \n"
+				fprintf(stderr, "# Event %d\tts: %u\tlen: %d (%d)\t \n"
 				, fsm.ret_cnt[FSM_EVENT]
 				, fsm.evt.ts
 				, fsm.evt.len
-				, fsm.evt.len_1f	
+				, len_diff
 				);
 			}
 

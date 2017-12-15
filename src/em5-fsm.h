@@ -9,7 +9,7 @@
 #endif
 
 #include "em.h"
-
+#include <stdbool.h>
 
 enum em5_fsm_state {
 	INIT
@@ -72,6 +72,7 @@ struct em5_fsm {
 	unsigned ret_cnt[MAX_EM5_FSM_RET];  // error counters
 	unsigned sync_ts;  // last sync event timestamp
 	struct em5_fsm_event{
+		bool corrupt; // event is corrupted 
 		unsigned ts;  // timestamp
 		unsigned len; // lenth
 		unsigned len_1f; // length according to MISS

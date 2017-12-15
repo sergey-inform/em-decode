@@ -73,6 +73,8 @@ struct em5_fsm {
 	unsigned sync_ts;  // last sync event timestamp
 	struct em5_fsm_event{
 		unsigned ts;  // timestamp
+		unsigned len; // lenth
+		unsigned len_1f; // length according to MISS
 		unsigned cnt;  // event word counter
 		unsigned prev_mod;  // previous module address
 		unsigned mod_cnt[EM_MAX_MODULE_NUM]; // word counter per module

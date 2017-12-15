@@ -13,8 +13,10 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 	enum em5_fsm_state  new_state = BUG;
 	enum em5_fsm_state  cur_state = fsm->state;
 	
-	if (wrd.whole == fsm->prev.whole) 
+	if (wrd.whole == fsm->prev.whole) { 
 		ret = DUP;  // duplicate word (should not be possible)
+		fsm->evt.len += 1;
+	}
 		
 	if (wrd.whole == 0x0U) 
 		ret = ZEROES;
@@ -53,12 +55,17 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 		case 0x1F:  //MISS status word (in the end of event)
 			if (cur_state == PCHI || cur_state == PCHN || cur_state == DATA || cur_state == CORRUPT) {
 				new_state = STAT;
-				//(wrd.data & EM_STATUS_COUNTER);
-				//FIXME: check event length
 			}
 			else {
 				ret = NO_BE;
 				new_state = CORRUPT;
+				break;
+			}
+			fsm->evt.len += 1;
+			fsm->evt.len_1f = (wrd.data & EM_STATUS_COUNTER);
+
+			if( fsm->evt.len != fsm->evt.len_1f) {
+				ret = WRONG_LEN_1F;
 			}
 			break;
 
@@ -107,6 +114,8 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 			 	ret = UNKNOWN_WORD;
 				new_state = CORRUPT;
 			}
+
+			fsm->evt.len += 1;
 		
 		}
 	}

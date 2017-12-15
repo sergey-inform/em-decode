@@ -37,14 +37,13 @@ static struct argp_option options[] = {
 	{0,0,0,0, "Options:" },
 	{ "debug", 'd', 0, 0, "Interprete input word by word."},
 	{ "verbose", 'v', 0, 0, "Trace all events to stderr."},
-	{ "quiet", 'q', 0, 0, "Print to stderr only errors."},
 	{ "stats", 's', 0, 0, "Print statistics."},
 	{ "output", 'o', "OUTFILE", 0, "Instead of stdout output events to OUTFILE."},
 	{ 0 } 
 };
 
 struct args {
-	bool debug, verbose, quiet, stats;
+	bool debug, verbose, stats;
 	char *infile;
 	char *outfile;
 	unsigned crate_id;
@@ -59,7 +58,6 @@ parse_opt(int key, char *arg, struct argp_state *state)
 
 	struct args *args = state->input;
 	switch (key) {
-		case 'q': args->quiet = true; break;
 		case 's': args->stats = true; break;
 		case 'v': args->verbose = true; break;
 		case 'd': args->debug = true; break;
@@ -105,14 +103,13 @@ void dump_args( struct args * args)
 	printf(	"outfile %s \n" \
 		"infile %s \n" \
 		"CrateId %d \n" \
-		"flags: %s%s%s%s \n",
-		args->outfile,
-		args->infile,
-		args->crate_id,
-		args->verbose ? "verbose ": "",
-		args->stats ? "stats ": "",
-		args->debug ? "debug ": "",
-		args->quiet ? "quiet ": ""
+		"flags: %s%s%s \n" 
+		, args->outfile
+		, args->infile
+		, args->crate_id
+		, args->verbose ? "verbose ": ""
+		, args->stats ? "stats ": ""
+		, args->debug ? "debug ": ""
 		);
 
 	printf("\n");
@@ -142,7 +139,7 @@ Prints errors/debug info to stderr.
 		
 		ret = em5_fsm_next(&fsm, wrd);
 
-		if (args->debug && ! args->quiet) {
+		if (args->debug) {
 			fprintf(stderr, "%06lx  %04x %04x  %-6s %s\n"
 				,wofft
 				,wrd.data
@@ -152,13 +149,25 @@ Prints errors/debug info to stderr.
 				);
 		}
 		
+		else if (args->verbose && ret > FSM_ERROR) {
+			fprintf(stderr, "%06lx  %04x %04x  %-6s %s\n"
+                                ,wofft
+                                ,wrd.data
+                                ,wrd.addr
+                                ,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
+                                ,em5_fsm_retstr[ret]
+                                );	
+		}
+		
 		if (ret == FSM_EVENT) {
 			//TODO: output event_info to outfile
 
 			if (args->verbose) {
-				fprintf(stderr, "# Event %d\tts: %u \n"
+				fprintf(stderr, "# Event %d\tts: %u\tlen: %d\tlen_1f: %d \n"
 				, fsm.ret_cnt[FSM_EVENT]
 				, fsm.evt.ts
+				, fsm.evt.len
+				, fsm.evt.len_1f	
 				);
 			}
 

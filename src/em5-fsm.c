@@ -79,7 +79,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 				fsm->evt.cnt += 1;
 
 				fsm->evt.mod_cnt[EM_ADDR_MOD(wrd.addr)] += 1;
-				
+
 				// check MISS addresses are ascending
 				if (fsm->evt.prev_mod > EM_ADDR_MOD(wrd.addr))
 					ret = ADDR_ORDER;

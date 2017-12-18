@@ -131,6 +131,7 @@ Prints errors/debug info to stderr.
 	enum em5_fsm_ret ret;
 	int len_diff;
 
+
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
 		if (bytes != sizeof(emword)) {
@@ -140,28 +141,31 @@ Prints errors/debug info to stderr.
 		
 		ret = em5_fsm_next(&fsm, wrd);
 
-		if (args->debug) {
-			fprintf(stderr, "%06lx  %04x %04x  %-6s %s\n"
-				,wofft
-				,wrd.data
-				,wrd.addr
-				,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
-				,em5_fsm_retstr[ret]
-				);
-		}
+		if (args->debug || ( args->verbose && ret > FSM_ERROR) ) {
+			if (fsm.state == DATA) 
+				fprintf(stderr, "%06lx  %02d %02d  %04x  %-6s %s\n"
+					,wofft
+					,EM_ADDR_MOD(wrd.addr)
+					,EM_ADDR_CHAN(wrd.addr)
+					,wrd.data
+					,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
+					,em5_fsm_retstr[ret]
+					);
 		
-		else if (args->verbose && ret > FSM_ERROR) {
-			fprintf(stderr, "%06lx  %04x %04x  %-6s %s\n"
-                                ,wofft
-                                ,wrd.data
-                                ,wrd.addr
-                                ,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
-                                ,em5_fsm_retstr[ret]
-                                );	
+			else 
+				fprintf(stderr, "%06lx  0x%04x %04x  %-6s %s\n"
+					,wofft
+					,wrd.addr
+					,wrd.data
+					,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
+					,em5_fsm_retstr[ret]
+					);
 		}
 		
 		if (ret == FSM_EVENT) {
 			//FIXME: output event_info to outfile
+			
+
 
 			len_diff = (int)(fsm.evt.len & EM_STATUS_COUNTER) - fsm.evt.len_1f;
 

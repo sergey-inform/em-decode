@@ -24,21 +24,21 @@
 
 
 const char *argp_program_version = "em-parse 2.0";
-const char *argp_program_bug_address = "\"Sergey Ryzhikov\" <sergey-inform@ya.ru>";
-static char doc[] = "\nParse EuroMISS raw data file, output valid em-event structures.\n" \
-	"\v How to use:\n" \
-	"Use --verbose and --debug flags to understand what's going on." \
-	"...\n.";  // FIXME
-static char args_doc[] = "CrateID [FILENAME]";
+const char *argp_program_bug_address = "\"Sergey Ryzhikov\" <sergey.ryzhikov@ihep.ru>";
+static char doc[] = "\nParse EuroMISS raw data file, output valid em-event structures to stdout, print error counts to stderr.\n" \
+	"\v" \
+	"Use --verbose and --debug flags to understand what's wrong in data.";
+
+static char args_doc[] = "[FILENAME]";
 
 static struct argp_option options[] = { 
-	{0,0,0,0, "CrateID is an integer number, decimal or hex with '0x' prefix." },
 	{0,0,0,0, "If no FILENAME, waits for data in stdin." },
 	{0,0,0,0, "Options:" },
-	{ "debug", 'd', 0, 0, "Interprete input word by word."},
-	{ "verbose", 'v', 0, 0, "Trace all events to stderr."},
-	{ "stats", 's', 0, 0, "Print statistics."},
-	{ "output", 'o', "OUTFILE", 0, "Instead of stdout output events to OUTFILE."},
+	{ "crate" , 'c', "NUM", 0, "CrateID for struct em-event, is an integer number (decimal or hex with '0x' prefix)." },
+	{ "output", 'o', "OUTFILE", 0, "Instead of stdout, output events to OUTFILE."},
+	{ "debug", 'd', 0, 0, "Iterprete input word by word to stdout (should be used for debug only)."},
+	{ "verbose", 'v', 0, 0, "Print event data in debug."},
+//	{ "stats", 's', 0, 0, "Print error statistics per module."}, //TODO
 	{ 0 } 
 };
 
@@ -46,6 +46,7 @@ struct args {
 	bool debug, verbose, stats;
 	char *infile;
 	char *outfile;
+	char *errfile;
 	unsigned crate_id;
 	bool no_output;
 };
@@ -62,28 +63,27 @@ parse_opt(int key, char *arg, struct argp_state *state)
 		case 'v': args->verbose = true; break;
 		case 'd': args->debug = true; break;
 		case 'o': args->outfile = arg; break;
+		case 'c': 
+			crate_id = strtol(arg, NULL, 0 /*base*/);
+			// check CrateID is valid
+			if (crate_id < 0) {
+				argp_failure(state, EX_USAGE, EINVAL,
+					"CrateID should be unsigned integer"\
+					", but '%s' is given.",	arg);
+				break;
+			}
+			args->crate_id = (unsigned int)crate_id;
+			break;
 
 		case ARGP_KEY_NO_ARGS:
 			argp_usage(state);
 
 		case ARGP_KEY_ARG: 
-			if (state->arg_num == 0) {  // CrateID
-				crate_id = strtoul(arg, NULL, 0 /*base*/);
-
-				// check CrateID is valid
-				if (crate_id < 0) {
-					argp_failure(state, EX_USAGE, EINVAL,
-						"CrateID should be unsigned integer"\
-						", but '%s' is given.",	arg);
-				}
-				args->crate_id = (unsigned int)crate_id;
-			
-			}
-			else if (state->arg_num == 1) {  // FILENAME
+			if (state->arg_num == 0) {  // FILENAME
 				args->infile = arg;
 			}
 			else {
-				argp_usage(state); // more then two args is a typo
+				argp_usage(state); // catch a typo
 			}
 			break;
 
@@ -120,7 +120,7 @@ void dump_args( struct args * args)
 int em_parse( FILE * infile, FILE * outfile, struct args * args)
 /** Process data with em5 state machine. 
 Generates daq_event_info structures and put them to outfile.
-Prints errors/debug info to stderr.
+Prints errors/debug info to errfile.
 */
 {
 	size_t wofft = 0;
@@ -208,12 +208,12 @@ int main(int argc, char *argv[])
 	args.infile = "-";	
 	
 	argp_parse(&argp, argc, argv, 0, 0, &args);
-//	dump_args(&args);
+	//dump_args(&args);
 	
 	// outfile
 	if ( !strcmp(args.outfile, "-") ) {  // output to stdout
 		if (isatty(fileno(stdout))) {  // stdout printed on terminal
-			fprintf(stderr, "Binary output to terminal, srsly? Output suppressed.\n");
+			fprintf(stderr, "Binary output to terminal, srsly? Use --debug for printable output!\n");
 		}
 		else {
 			outfile = fdopen(dup(fileno(stdout)), "wb"); // force binary output ...

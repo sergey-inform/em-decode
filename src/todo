@@ -1,0 +1,4 @@
+stdout in debug mode
+rewrite parse funciton (3 streams on parameter lists) conf?
+fix error dupword fe fe be be ->  NOT_ERROR_DMA_BURST_OVERREAD
+

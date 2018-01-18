@@ -1,22 +1,16 @@
 /**
- * Parse EuroMISS raw data.
- * Check the file syntax and optionally print some statistics.
+ * Parse EuroMISS raw data, output binary event-info structs for further processing.
  *
  * Autor: Sergey Ryzhikov <sergey.ryzhikov@ihep.ru>, Nov 2017
  * Made for SPASCHARM experiment.
  */
 
 #include <argp.h>
-#include <stdbool.h>
-#include <stdio.h>
 #include <error.h>
-#include <string.h>
-#include <stdlib.h> //malloc()
-#include <assert.h>
-#include <unistd.h>
-#include <inttypes.h>
+#include <string.h> //strcmp
+#include <stdlib.h> //strtol
+#include <unistd.h> //dup
 #include <sysexits.h>
-
 #include <assert.h>
 
 #include "em5-fsm.h"
@@ -25,9 +19,8 @@
 
 const char *argp_program_version = "em-parse 2.0";
 const char *argp_program_bug_address = "\"Sergey Ryzhikov\" <sergey.ryzhikov@ihep.ru>";
-static char doc[] = "\nParse EuroMISS raw data file, output valid em-event structures to stdout, print error counts to stderr.\n" \
-	"\v" \
-	"Use --verbose and --debug flags to understand what's wrong in data.";
+static char doc[] = "\nParse EuroMISS raw data file, " \
+	"output valid em-event structures to stdout, print error counts and stats to stderr.\n";
 
 static char args_doc[] = "[FILENAME]";
 
@@ -36,17 +29,14 @@ static struct argp_option options[] = {
 	{0,0,0,0, "Options:" },
 	{ "crate" , 'c', "NUM", 0, "CrateID for struct em-event, is an integer number (decimal or hex with '0x' prefix)." },
 	{ "output", 'o', "OUTFILE", 0, "Instead of stdout, output events to OUTFILE."},
-	{ "debug", 'd', 0, 0, "Iterprete input word by word to stdout (should be used for debug only)."},
-	{ "verbose", 'v', 0, 0, "Print event data in debug."},
 //	{ "stats", 's', 0, 0, "Print error statistics per module."}, //TODO
 	{ 0 } 
 };
 
 struct args {
-	bool debug, verbose, stats;
+	bool stats;
 	char *infile;
 	char *outfile;
-	char *errfile;
 	unsigned crate_id;
 	bool no_output;
 };
@@ -60,8 +50,6 @@ parse_opt(int key, char *arg, struct argp_state *state)
 	struct args *args = state->input;
 	switch (key) {
 		case 's': args->stats = true; break;
-		case 'v': args->verbose = true; break;
-		case 'd': args->debug = true; break;
 		case 'o': args->outfile = arg; break;
 		case 'c': 
 			crate_id = strtol(arg, NULL, 0 /*base*/);
@@ -103,13 +91,11 @@ void dump_args( struct args * args)
 	printf(	"outfile %s \n" \
 		"infile %s \n" \
 		"CrateId %d \n" \
-		"flags: %s%s%s \n" 
+		"flags: %s \n" 
 		, args->outfile
 		, args->infile
 		, args->crate_id
-		, args->verbose ? "verbose ": ""
 		, args->stats ? "stats ": ""
-		, args->debug ? "debug ": ""
 		);
 
 	printf("\n");
@@ -120,7 +106,7 @@ void dump_args( struct args * args)
 int em_parse( FILE * infile, FILE * outfile, struct args * args)
 /** Process data with em5 state machine. 
 Generates daq_event_info structures and put them to outfile.
-Prints errors/debug info to errfile.
+Prints error counts and stats to errfile.
 */
 {
 	size_t wofft = 0;
@@ -129,7 +115,6 @@ Prints errors/debug info to errfile.
 
 	struct em5_fsm fsm = {0};
 	enum em5_fsm_ret ret;
-	int len_diff;
 
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
@@ -140,50 +125,15 @@ Prints errors/debug info to errfile.
 		}
 		
 		ret = em5_fsm_next(&fsm, wrd);
-
-		if (args->debug || ( args->verbose && ret > FSM_ERROR) ) {
-			if (fsm.state == DATA) 
-				fprintf(stderr, "%06lx  %02d %02d  %04x  %-6s %s\n"
-					,wofft
-					,EM_ADDR_MOD(wrd.addr)
-					,EM_ADDR_CHAN(wrd.addr)
-					,wrd.data
-					,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
-					,em5_fsm_retstr[ret]
-					);
-		
-			else 
-				fprintf(stderr, "%06lx  0x%04x %04x  %-6s %s\n"
-					,wofft
-					,wrd.addr
-					,wrd.data
-					,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
-					,em5_fsm_retstr[ret]
-					);
-		}
 		
 		if (ret == FSM_EVENT) {
-			//FIXME: output event_info to outfile
-			
-
-
-			len_diff = (int)(fsm.evt.len & EM_STATUS_COUNTER) - fsm.evt.len_1f;
-
-			if (args->verbose) {
-				fprintf(stderr, "# Event %d\tts: %u\tlen: %d (%d)\t \n"
-				, fsm.ret_cnt[FSM_EVENT]
-				, fsm.evt.ts
-				, fsm.evt.len
-				, len_diff
-				);
-			}
-
+			//FIXME: output struct event_info to outfile
 		}
 
 		wofft += 1;
 	}
 
-
+	// Print error counts
 	for (int i = FSM_EVENT; i<MAX_EM5_FSM_RET; i++) {
 		if(em5_fsm_retstr[i] && fsm.ret_cnt[i])
 			fprintf(stderr, "%d\t %s \n"
@@ -191,6 +141,8 @@ Prints errors/debug info to errfile.
 				, em5_fsm_retstr[i]
 				);
 	}
+
+	// Print stats //TODO
 
 	return 0; 
 }
@@ -213,11 +165,11 @@ int main(int argc, char *argv[])
 	// outfile
 	if ( !strcmp(args.outfile, "-") ) {  // output to stdout
 		if (isatty(fileno(stdout))) {  // stdout printed on terminal
-			fprintf(stderr, "Binary output to terminal, srsly? Use --debug for printable output!\n");
+			error(EX_USAGE, 0, "Binary output to terminal, srsly? Pipe it to em-dump for printable output!");
 		}
 		else {
 			outfile = fdopen(dup(fileno(stdout)), "wb"); // force binary output ...
-					/*... for compatibility with lame systems */
+					/*... for compatibility with lame operating systems */
 		}
 	} else {
 		outfile = fopen( args.outfile, "wb");  // rewrite outfile if exists
@@ -241,8 +193,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-
-
 	err = em_parse(infile, outfile, &args);
 
 	if (infile)	fclose(infile);
@@ -250,4 +200,3 @@ int main(int argc, char *argv[])
 
 	return err;
 }
-

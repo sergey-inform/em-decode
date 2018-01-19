@@ -11,7 +11,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 {
 	enum em5_fsm_ret  ret = FSM_OK;
 	enum em5_fsm_state  new_state = BUG;
-	enum em5_fsm_state  cur_state = fsm->state;
+	enum em5_fsm_state  prev_state = fsm->state;
 	
 		
 	switch (wrd.byte[0])
@@ -19,7 +19,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 
 	case 0xBE:  // begin readout event (pchi)
 	case 0xDE:  // begin enumeration event (pchn)
-		if (cur_state == END || cur_state == INIT || cur_state == CORRUPT) {
+		if (prev_state == END || prev_state == INIT || prev_state == CORRUPT) {
 			memset(&fsm->evt, 0, sizeof(struct em5_fsm_event));  // flush previous event
 			if (wrd.byte[0] == 0xBE) {
 				new_state = PCHI;
@@ -37,7 +37,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 		break;
 
 	case 0x1F:  //MISS status word (in the end of event)
-		if (cur_state == PCHI || cur_state == PCHN || cur_state == DATA || cur_state == CORRUPT) {
+		if (prev_state == PCHI || prev_state == PCHN || prev_state == DATA || prev_state == CORRUPT) {
 			new_state = STAT;
 		}
 		else {
@@ -53,7 +53,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 		break;
 
 	case 0xFE:  //end event
-		if (cur_state == STAT || cur_state == CORRUPT) {
+		if (prev_state == STAT || prev_state == CORRUPT) {
 			ret = FSM_EVENT;	
 			new_state = END;
 		}
@@ -67,14 +67,14 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 
 //TODO
 //		case 0xXX:  //sync event
-//			new_state = cur_state;  //invisible
+//			new_state = prev_state;  //invisible
 //			fsm->sync_ts = ...
 //			ret = SYNC_EVENT;
 //			break;
 
 	default:
 		if ((wrd.byte[0] & 0x1F) <= EM_MAX_MODULE_NUM) {  // data word
-			if (cur_state == PCHI || cur_state == PCHN || cur_state == DATA) {
+			if (prev_state == PCHI || prev_state == PCHN || prev_state == DATA) {
 				new_state = DATA;
 				fsm->evt.cnt += 1;
 
@@ -87,7 +87,7 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 				fsm->evt.prev_mod = EM_ADDR_MOD(wrd.addr);
 
 			}
-			else if ( cur_state == CORRUPT) {
+			else if ( prev_state == CORRUPT) {
 				new_state = CORRUPT;
 			}
 			else {
@@ -104,10 +104,21 @@ enum em5_fsm_ret em5_fsm_next(struct em5_fsm * fsm, emword wrd)
 	
 	}
 
-	if (wrd.whole == fsm->prev.whole)  
+	if (wrd.whole == fsm->prev.whole) {  
 		ret = DUP;  // duplicate word (should not be possible)
+		
+		if (prev_state == END) {
+			new_state = END;
+			ret = DMA_OVERREAD;
+		}
+		
+		if (prev_state == PCHI) {
+			new_state = PCHI;
+			ret = DMA_OVERREAD;
+		}
+	}
 
-	if (wrd.whole == 0x0U) 
+	if (wrd.whole == 0x0U && prev_state != PCHI) 
 		ret = ZEROES;
 	
 	if (wrd.whole == ~0x0U) 

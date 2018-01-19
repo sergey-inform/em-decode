@@ -19,7 +19,7 @@ enum em5_fsm_state {
 	, STAT  /* miss status word */
 	, END	/* end of readout */
 	//, SYNC	/* synchronisation data */
-	, CORRUPT /* corrupted event data */
+	, CORRUPT /* corrupted event */
 	, BUG /* fsm bug */
 	};
 
@@ -40,6 +40,7 @@ enum em5_fsm_ret{
 	FSM_OK
 	, FSM_EVENT
 //	, FSM_SYNC_TS
+	, DMA_OVERREAD
 	, FSM_ERROR
 	, DUP
 	, ZEROES, ONES
@@ -55,6 +56,7 @@ static const char UNUSED *em5_fsm_retstr[] = {
 	, [FSM_EVENT] = "CNT_EM_EVENT"
 //	, [FSM_SYNC_EVENT] = "CNT_EM_SYNC_EVENT"
 	, [DUP] = "ERR_EM_DUPWORD"	// Duplicate word.
+	, [DMA_OVERREAD] = "NOT_ERR_DMA_OVERREAD"  // DMA read full burst when no more data in buffer (always after 0xFE)
 	, [ZEROES] = "ERR_EM_ZEROWORD"	// A zero word.
 	, [ONES] = "ERR_EM_ONESWORD"	// A word with all ones.
 	, [NO_FE]= "ERR_EM_NO_FE"	// Sudden new event (0xBE).

@@ -120,10 +120,10 @@ Prints errors/debug info to outfile.
 					);
 		}
 		
-		if (args->events) {
+		if (fsm.state == END && args->events) {
 			len_diff = (int)(fsm.evt.len & EM_STATUS_COUNTER) - fsm.evt.len_1f;
 
-			fprintf(stderr, "# Event %d\tts: %u\tlen: %d (%d)\t \n"
+			fprintf(outfile, "# Event %d\tts: %u\tlen: %d (%d)\t \n"
 			, fsm.ret_cnt[FSM_EVENT]
 			, fsm.evt.ts
 			, fsm.evt.len

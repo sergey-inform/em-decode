@@ -74,11 +74,12 @@ struct em5_fsm {
 	struct em5_fsm_event{
 		bool corrupt; // event is corrupted 
 		unsigned ts;  // timestamp
-		unsigned len; // lenth
+		unsigned len; // length in words
 		unsigned len_1f; // length according to MISS
 		unsigned cnt;  // event word counter
 		unsigned prev_mod;  // previous module address
 		unsigned mod_cnt[EM_MAX_MODULE_NUM]; // word counter per module
+//		size_t mod_offt;
 		unsigned data[EM_MAX_MODULE_NUM];  // event data offset
 		} evt; 
 	};

@@ -18,7 +18,7 @@
 
 #include <assert.h>
 
-#include "em5-fsm.h"
+#include "em5-parser.h"
 #include "uDAQ.h"
 
 
@@ -84,9 +84,9 @@ Prints errors/debug info to outfile.
 	size_t bytes = 0;
 	emword wrd;
 
-	struct em5_fsm fsm = {0};
-	enum em5_fsm_ret ret;
-	int len_diff;
+	struct em5_parser parser = {0};
+	enum em5_parser_ret ret;
+//	int len_diff;
 
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
@@ -96,11 +96,11 @@ Prints errors/debug info to outfile.
 			break;
 		}
 		
-		ret = em5_fsm_next(&fsm, wrd);
+		ret = em5_parser_next(&parser, wrd);
 
-		if (!args->quiet || (ret > FSM_ERROR) ) {
+		if (!args->quiet || (ret > RET_ERROR) ) {
 			
-			if (fsm.state == DATA) 
+/*			if (parser.state == DATA) 
 				fprintf(outfile, "%06lx  %02d %02d  %04x  %-6s %s\n"
 					,wofft
 					,EM_ADDR_MOD(wrd.addr)
@@ -111,15 +111,16 @@ Prints errors/debug info to outfile.
 					);
 		
 			else 
-				fprintf(outfile, "%06lx  0x%04x %04x  %-6s %s\n"
+*/
+				fprintf(outfile, "%06lx  0x%04x %04x  %s %s\n"
 					,wofft
 					,wrd.addr
 					,wrd.data
-					,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
-					,em5_fsm_retstr[ret]
+					, emword_class_str[emword_classify(wrd, &parser)] //FIXME DELME
+					,em5_parser_retstr[ret]
 					);
 		}
-		
+/*	
 		if (fsm.state == END && args->events) {
 			len_diff = (int)(fsm.evt.len & EM_STATUS_COUNTER) - fsm.evt.len_1f;
 
@@ -131,7 +132,7 @@ Prints errors/debug info to outfile.
 			);
 
 		}
-
+*/
 		wofft += 1;
 	}
 

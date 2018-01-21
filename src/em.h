@@ -26,6 +26,7 @@ typedef union {
         unsigned char byte[4];
 } emword;
 
+
 #define EM_ADDR_CHAN(x)	(((x) & 0xFE0) >> 5)
 #define EM_ADDR_MOD(x)	((x) & 0x1F)
 

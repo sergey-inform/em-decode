@@ -86,7 +86,7 @@ Prints errors/debug info to outfile.
 
 	struct em5_parser parser = {0};
 	enum em5_parser_ret ret;
-//	int len_diff;
+	int len_diff;
 
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
@@ -116,23 +116,23 @@ Prints errors/debug info to outfile.
 					,wofft
 					,wrd.addr
 					,wrd.data
-					, emword_class_str[emword_classify(wrd, &parser)] //FIXME DELME
-					,em5_parser_retstr[ret]
+					, em5_protocol_state_str[parser.state]
+					//, emword_class_str[emword_classify(wrd, &parser)] //FIXME DELME
+					,ret == RET_OK?parser.evt.corrupt? "X":".":em5_parser_retstr[ret]
 					);
 		}
-/*	
-		if (fsm.state == END && args->events) {
-			len_diff = (int)(fsm.evt.len & EM_STATUS_COUNTER) - fsm.evt.len_1f;
+	
+		if (ret == RET_EVENT && args->events) {
+			len_diff = (int)(parser.evt.len & EM_STATUS_COUNTER) - parser.evt.len_1f;
 
 			fprintf(outfile, "# Event %d\tts: %u\tlen: %d (%d)\t \n"
-			, fsm.ret_cnt[FSM_EVENT]
-			, fsm.evt.ts
-			, fsm.evt.len
+			, parser.ret_cnt[RET_EVENT]
+			, parser.evt.ts
+			, parser.evt.len
 			, len_diff
 			);
 
 		}
-*/
 		wofft += 1;
 	}
 

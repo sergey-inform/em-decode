@@ -15,8 +15,8 @@
 enum em5_parser_ret{
 	RET_OK
 	, RET_EVENT
-//	, RET_SYNC
-//	, RET_END_SPILL
+	, RET_SYNC
+	, RET_END_SPILL
 	, RET_DMA_OVERREAD
 	, RET_ERROR
 	, ERR_DUP
@@ -33,12 +33,12 @@ enum em5_parser_ret{
 static const char UNUSED *em5_parser_retstr[] = {
 	[RET_OK] = "."
 	, [RET_EVENT] = "CNT_EM_EVENT"
-//	, [RET_SYNC] = "CNT_EM_SYNC_EVENT"
-//	, [RET_END_SPILL] = "CNT_END_SPILL"
+	, [RET_SYNC] = "CNT_EM_SYNC_EVENT"
+	, [RET_END_SPILL] = "CNT_END_SPILL"
 	, [RET_DMA_OVERREAD] = "NOT_ERR_DMA_OVERREAD"  // DMA read full burst when no more data in buffer (always after 0xFE)
 	, [ERR_DUP] = "ERR_EM_DUPWORD"	// Duplicate word.
-	, [ERR_ZEROES] = "ERR_EM_ZEROWORD"	// A zero word.
-	, [ERR_ONES] = "ERR_EM_ONESWORD"	// A word with all ones.
+	, [ERR_ZEROES] = "ERR_EM_ZERO_WORD"	// A zero word.
+	, [ERR_ONES] = "ERR_EM_ONES_WORD"	// A word with all ones.
 	, [ERR_UNKNOWN_WORD] = "ERR_EM_UNKNOWN_WORD"	// Unknown word type.
 	, [ERR_PROTOCOL] = "ERR_PROTOCOL"  // EM5 protocol error
 //	, [ERR_NO_FE]= "ERR_EM_NO_FE"	// Sudden new event (0xBE).
@@ -50,12 +50,19 @@ static const char UNUSED *em5_parser_retstr[] = {
 
 
 enum em5_protocol_state {
-	NO
+	NO_STATE
 	, PCHI_BEGIN  // sequential data readout 
-	, PCHI_DATA
 	, PCHN_BEGIN  // sequential module position numbers readout
-	, PCHN_DATA
+	, PCH_DATA
 	, PCH_END  // end of pchi or pchn
+	};
+
+static const char UNUSED * em5_protocol_state_str[] = {
+	[NO_STATE] = "NO_STATE"
+	, [PCHI_BEGIN] = "PCHI"
+	, [PCHN_BEGIN] = "PCHN"
+	, [PCH_DATA] = "DATA"
+	, [PCH_END] = "END"
 	};
 
 //enum event_epoch {
@@ -102,7 +109,7 @@ struct em5_parser {
 	unsigned last_sync_ts;  // last sync event timestamp
 	enum em5_protocol_state state;  // current readout protocol
 //	enum event_epoch epoch;
-	struct {
+	struct em5_parser_event_info {
 		unsigned ts;  // timestamp
 		unsigned len; // length in words
 		unsigned len_1f; // length according to MISS
@@ -111,7 +118,7 @@ struct em5_parser {
 		bool corrupt; // event is corrupted
 		unsigned mod_offt[EM_MAX_MODULE_NUM];  // event data offset
 		unsigned mod_cnt[EM_MAX_MODULE_NUM]; // word counter per module
-		} event_info; 
+		} evt; 
 
 	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // error counters
 //	unsigned event_cnt[EVT_EPOCH_MAX][EVT_STATE_MAX];

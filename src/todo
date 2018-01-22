@@ -1,3 +1,0 @@
-fix error dupword fe fe be be ->  NOT_ERROR_DMA_BURST_OVERREAD
-ERR_ZERO_WORD seems to be ok in several cases (if the first word after BS)
-

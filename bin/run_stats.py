@@ -9,9 +9,10 @@ unixtime  total_events broken_events
 
 import sys
 import glob
+import signal
 import subprocess32 as sp
 import multiprocessing as mp
-
+from time import sleep
 
 PROG='./em-parse'
 CRATE=2
@@ -19,6 +20,8 @@ RUN_DIR=sys.argv[1]
 
 def work(filename):
     '''Defines the work unit on an input file'''
+    signal.signal(signal.SIGINT, signal.SIG_IGN)  #ignore Ctrl-C
+
     out = sp.check_output([PROG, '{}'.format(filename), '-o', '/dev/null'], stderr=sp.STDOUT)
     
     #get timestamp from filename
@@ -53,4 +56,16 @@ if __name__ == '__main__':
     pool = mp.Pool(processes=count)
 
     #Run the jobs
-    pool.map(work, tasks)
+    try:
+        res = pool.map_async(work, tasks)
+        res.get(10) # Without the timeout this blocking call ignores all signals.
+
+    except KeyboardInterrupt:
+        pool.terminate()
+
+    else:
+        print("Normal termination")
+        pool.close()
+
+    pool.join()
+

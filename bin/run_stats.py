@@ -41,7 +41,8 @@ def work(filename):
         elif k == "CNT_EM_EVENT":
             cnt = int(v)
 
-    print('{}\t{}\t{}'.format(ts, cnt, corrupted))
+    if cnt:
+        print('{}\t{}\t{}'.format(ts, cnt, corrupted))
 
     return 0
 

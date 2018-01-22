@@ -58,13 +58,12 @@ if __name__ == '__main__':
     #Run the jobs
     try:
         res = pool.map_async(work, tasks)
-        res.get(10) # Without the timeout this blocking call ignores all signals.
+        res.get(30) # Without the timeout this blocking call ignores all signals.
 
     except KeyboardInterrupt:
         pool.terminate()
 
     else:
-        print("Normal termination")
         pool.close()
 
     pool.join()

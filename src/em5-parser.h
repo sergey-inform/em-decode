@@ -126,6 +126,5 @@ struct em5_parser {
 	};
 
 enum em5_parser_ret em5_parser_next(struct em5_parser *, emword);
-enum emword_class emword_classify(emword, struct em5_parser *);
 
 #endif /* EM5_PARSER_H */

@@ -17,8 +17,8 @@ enum em5_parser_ret{
 	, RET_EVENT
 	, RET_SYNC
 	, RET_END_SPILL
-	, RET_DMA_OVERREAD
 	, RET_ERROR
+	, ERR_DMA_OVERREAD
 	, ERR_DUP
 	, ERR_ZEROES
 	, ERR_ONES
@@ -35,7 +35,7 @@ static const char UNUSED *em5_parser_retstr[] = {
 	, [RET_EVENT] = "CNT_EM_EVENT"
 	, [RET_SYNC] = "CNT_EM_SYNC_EVENT"
 	, [RET_END_SPILL] = "CNT_END_SPILL"
-	, [RET_DMA_OVERREAD] = "NOT_ERR_DMA_OVERREAD"  // DMA read full burst when no more data in buffer (always after 0xFE)
+	, [ERR_DMA_OVERREAD] = "ERR_KNOWN_DMA_OVERREAD"  // DMA read full burst when no more data in buffer (always after 0xFE)
 	, [ERR_DUP] = "ERR_EM_DUPWORD"	// Duplicate word.
 	, [ERR_ZEROES] = "ERR_EM_ZERO_WORD"	// A zero word.
 	, [ERR_ONES] = "ERR_EM_ONES_WORD"	// A word with all ones.
@@ -58,10 +58,10 @@ enum em5_protocol_state {
 	};
 
 static const char UNUSED * em5_protocol_state_str[] = {
-	[NO_STATE] = "NO_STATE"
+	[NO_STATE] = "-"
 	, [PCHI_BEGIN] = "PCHI"
 	, [PCHN_BEGIN] = "PCHN"
-	, [PCH_DATA] = "DATA"
+	, [PCH_DATA] = "data"
 	, [PCH_END] = "END"
 	};
 
@@ -120,9 +120,8 @@ struct em5_parser {
 		unsigned mod_cnt[EM_MAX_MODULE_NUM]; // word counter per module
 		} evt; 
 
-	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // error counters
-//	unsigned event_cnt[EVT_EPOCH_MAX][EVT_STATE_MAX];
-//	unsigned word_cnt[EVT_EPOCH_MAX][EMWORD_TYPE_MAX];
+	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // return value counters
+	unsigned corrupted_cnt;  // corrupted events couner
 	};
 
 enum em5_parser_ret em5_parser_next(struct em5_parser *, emword);

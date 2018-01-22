@@ -100,37 +100,43 @@ Prints errors/debug info to outfile.
 
 		if (!args->quiet || (ret > RET_ERROR) ) {
 			
-/*			if (parser.state == DATA) 
-				fprintf(outfile, "%06lx  %02d %02d  %04x  %-6s %s\n"
-					,wofft
-					,EM_ADDR_MOD(wrd.addr)
-					,EM_ADDR_CHAN(wrd.addr)
-					,wrd.data
-					,fsm.state == DATA ? "." :em5_fsm_statestr[fsm.state]
-					,em5_fsm_retstr[ret]
-					);
-		
-			else 
-*/
-				fprintf(outfile, "%06lx  0x%04x %04x  %s %s\n"
+			if (parser.state == PCH_DATA) 
+				fprintf(outfile, "%06lx  0x%04x %04x  %02d %02d  %s \n"
 					,wofft
 					,wrd.addr
 					,wrd.data
-					, em5_protocol_state_str[parser.state]
-					//, emword_class_str[emword_classify(wrd, &parser)] //FIXME DELME
-					,ret == RET_OK?parser.evt.corrupt? "X":".":em5_parser_retstr[ret]
+					,EM_ADDR_MOD(wrd.addr)
+					,EM_ADDR_CHAN(wrd.addr)
+					,em5_parser_retstr[ret]
+					);
+		
+			else 
+
+				fprintf(outfile, "%06lx  0x%04x %04x  %5s  %s \n"
+					,wofft
+					,wrd.addr
+					,wrd.data
+					,em5_protocol_state_str[parser.state]
+					,ret != RET_OK ? em5_parser_retstr[ret] : parser.evt.corrupt ? "X" : "."
 					);
 		}
 	
 		if (ret == RET_EVENT && args->events) {
 			len_diff = (int)(parser.evt.len & EM_STATUS_COUNTER) - parser.evt.len_1f;
 
-			fprintf(outfile, "# Event %d\tts: %u\tlen: %d (%d)\t \n"
+			fprintf(outfile, "# Event %-5d  ts: %-10u  len: %4d "
 			, parser.ret_cnt[RET_EVENT]
 			, parser.evt.ts
 			, parser.evt.len
-			, len_diff
 			);
+
+			// print len_diff
+			if (len_diff)
+				fprintf(outfile, "(%d)", len_diff);
+
+			fprintf(outfile, "  %s \n",
+				parser.evt.corrupt? "CORRUPT" : "OK"
+				);
 
 		}
 		wofft += 1;

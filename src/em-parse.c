@@ -13,7 +13,7 @@
 #include <sysexits.h>
 #include <assert.h>
 
-#include "em5-fsm.h"
+#include "em5-parser.h"
 #include "uDAQ.h"
 
 
@@ -29,16 +29,15 @@ static struct argp_option options[] = {
 	{0,0,0,0, "Options:" },
 	{ "crate" , 'c', "NUM", 0, "CrateID for struct em-event, is an integer number (decimal or hex with '0x' prefix)." },
 	{ "output", 'o', "OUTFILE", 0, "Instead of stdout, output events to OUTFILE."},
-//	{ "stats", 's', 0, 0, "Print error statistics per module."}, //TODO
+	{ "stats", 's', 0, 0, "Print error statistics per module."}, //TODO
 	{ 0 } 
 };
 
 struct args {
-	bool stats;
 	char *infile;
 	char *outfile;
 	unsigned crate_id;
-	bool no_output;
+	bool stats;
 };
 
 
@@ -88,7 +87,8 @@ static struct argp argp = { options, parse_opt, args_doc, doc };
 void dump_args( struct args * args) 
 /** Print command line args */
 {
-	printf(	"outfile %s \n" \
+	fprintf(stderr,
+		"outfile %s \n" \
 		"infile %s \n" \
 		"CrateId %d \n" \
 		"flags: %s \n" 
@@ -99,11 +99,11 @@ void dump_args( struct args * args)
 		);
 
 	printf("\n");
-	fflush(stdout);
+	fflush(stderr);
 }
 
 
-int em_parse( FILE * infile, FILE * outfile, struct args * args)
+int em_parse( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
 /** Process data with em5 state machine. 
 Generates daq_event_info structures and put them to outfile.
 Prints error counts and stats to errfile.
@@ -112,9 +112,10 @@ Prints error counts and stats to errfile.
 	size_t wofft = 0;
 	size_t bytes = 0;
 	emword wrd;
+	unsigned word_count;
 
-	struct em5_fsm fsm = {0};
-	enum em5_fsm_ret ret;
+	struct em5_parser parser = {0};
+	enum em5_parser_ret ret;
 
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
@@ -124,25 +125,50 @@ Prints error counts and stats to errfile.
 			break;
 		}
 		
-		ret = em5_fsm_next(&fsm, wrd);
+		ret = em5_parser_next(&parser, wrd);
 		
-		if (ret == FSM_EVENT) {
+		if (ret == RET_EVENT) {
 			//FIXME: output struct event_info to outfile
 		}
 
 		wofft += 1;
 	}
 
-	// Print error counts
-	for (int i = FSM_EVENT; i<MAX_EM5_FSM_RET; i++) {
-		if(em5_fsm_retstr[i] && fsm.ret_cnt[i])
-			fprintf(stderr, "%d\t %s \n"
-				, fsm.ret_cnt[i]
-				, em5_fsm_retstr[i]
+	/// Print event counters
+	for (int i = RET_EVENT; i<RET_ERROR; i++) {
+		if(em5_parser_retstr[i] && parser.ret_cnt[i])
+			fprintf(errfile, "%d\t %s \n"
+				, parser.ret_cnt[i]
+				, em5_parser_retstr[i]
 				);
 	}
 
-	// Print stats //TODO
+	fprintf(errfile, "%d\t %s \n"	
+		, parser.corrupted_cnt
+		,"CNT_EM_EVENT_CORRUPTED"
+		);
+	
+	/// Print word counters
+	fprintf(errfile, "--\n");
+
+	word_count = 0;
+	for (int i = 0; i< MAX_EM5_PARSER_RET; i++) 
+		word_count += parser.ret_cnt[i];
+	
+	fprintf(errfile, "%-25s\t %d \n"
+		,"WORDS_TOTAL"
+		,word_count
+		);
+
+	for (int i = RET_ERROR + 1; i<MAX_EM5_PARSER_RET; i++) {
+		if(em5_parser_retstr[i] && parser.ret_cnt[i])
+			fprintf(errfile, "%-25s\t %d \n"
+				, em5_parser_retstr[i]
+				, parser.ret_cnt[i]
+				);
+	}
+
+	fprintf(errfile, "\n");
 
 	return 0; 
 }
@@ -193,7 +219,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	err = em_parse(infile, outfile, &args);
+	err = em_parse(infile, outfile, stderr, &args);
 
 	if (infile)	fclose(infile);
 	if (outfile)	fclose(outfile);

@@ -53,6 +53,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		case WORD_BEGIN_EVENT:
 		case WORD_BEGIN_ENUM:
 			memset(&parser->evt, 0, sizeof(struct em5_parser_event_info)); // flush
+			parser->evt.ts = wrd.data; //save timestamp low
 			
 			if (wrd_class == WORD_BEGIN_EVENT) {
 				next_state = PCHI_BEGIN;
@@ -79,7 +80,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 			break;
 
 		case WORD_DUP:
-			ret = RET_DMA_OVERREAD;  // known hardware bug
+			ret = ERR_DMA_OVERREAD;  // known hardware bug
 			break;
 
 		default:
@@ -109,7 +110,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		
 		case WORD_DUP:
 			next_state = parser->state; //no change
-			ret = RET_DMA_OVERREAD;
+			ret = ERR_DMA_OVERREAD;
 			break;
 
 		default:
@@ -153,6 +154,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		switch (wrd_class)
 		{
 		case WORD_END_EVENT:
+			parser->evt.ts += wrd.data << 16;  //save timestamp high
 			next_state = NO_STATE;
 			ret = RET_EVENT;
 			break;
@@ -178,7 +180,8 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 	}
 
 
-	if (ret >= RET_ERROR) {
+	if (ret >= RET_ERROR && !parser->evt.corrupt) {  // if not corrupted already
+		parser->corrupted_cnt += 1;
 		parser->evt.corrupt = true;
 	}
 

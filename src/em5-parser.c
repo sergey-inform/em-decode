@@ -181,8 +181,10 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 
 
 	if (ret >= RET_ERROR && !parser->evt.corrupt) {  // if not corrupted already
-		parser->corrupted_cnt += 1;
-		parser->evt.corrupt = true;
+		if (ret != ERR_DMA_OVERREAD) {
+			parser->corrupted_cnt += 1;
+			parser->evt.corrupt = true;
+		}
 	}
 
 	parser->prev = wrd;

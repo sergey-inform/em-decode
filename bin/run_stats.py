@@ -15,7 +15,7 @@ import multiprocessing as mp
 from time import sleep
 
 PROG='./em-parse'
-CRATE=2
+CRATE=1
 RUN_DIR=sys.argv[1]
 
 def work(filename):

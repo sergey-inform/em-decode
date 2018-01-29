@@ -24,6 +24,7 @@ def work(filename):
     signal.signal(signal.SIGINT, signal.SIG_IGN)  #ignore Ctrl-C
 
     out = sp.check_output([PROG, '{}'.format(filename), '-o', '/dev/null'], stderr=sp.STDOUT)
+
     
     #get timestamp from filename
     ts = filename.rsplit('.',2)[0].rsplit('-')[-1]
@@ -41,16 +42,18 @@ def work(filename):
         elif k == "CNT_EM_EVENT":
             cnt = int(v)
 
+    res = ""
     if cnt:
-        print('{}\t{}\t{}'.format(ts, cnt, corrupted))
+        res = '{}\t{}\t{}'.format(ts, cnt, corrupted)
+#    	sys.stdout.flush()
 
-    return 0
+    return res
 
 if __name__ == '__main__':
     #Specify files to be worked 
     # with typical shell syntax and glob module
     file_path = '{}/*/*.{:d}.dat'.format(RUN_DIR, CRATE)
-    tasks = glob.glob(file_path)
+    tasks = sorted(glob.glob(file_path))
 
     #Set up the parallel task pool to use all available processors
     count = mp.cpu_count()
@@ -58,14 +61,17 @@ if __name__ == '__main__':
 
     #Run the jobs
     try:
-        res = pool.map_async(work, tasks)  # for each task run a work process
-        res.get(TIMEOUT)  # Without the timeout this blocking call ignores all signals. 
-                     # BUG: https://bugs.python.org/issue8296
+        res = pool.imap(work, tasks)  # for each task run a work process
+
+        for r in res:  # Without the timeout this blocking call ignores all signals. 
+                           # BUG: https://bugs.python.org/issue8296
+            print(r)
+        
         pool.close()  # Every task is complete
 
     except KeyboardInterrupt:
         pool.terminate()
 
-    finally:
-        pool.join()
+#    finally:
+#        pool.join()
 

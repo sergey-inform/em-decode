@@ -15,7 +15,7 @@ import multiprocessing as mp
 from time import sleep
 
 PROG='./em-parse'
-CRATE=sys.argv[1]
+CRATE=int(sys.argv[1])
 RUN_DIR=sys.argv[2]
 TIMEOUT=3600  # seconds 
 

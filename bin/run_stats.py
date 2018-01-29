@@ -30,7 +30,7 @@ def work(filename):
     ts = filename.rsplit('.',2)[0].rsplit('-')[-1]
 
     #get output values
-    cnt, corrupted = None, None
+    cnt, corrupted = 0, 0
     for line in out.splitlines():
         if line.startswith('--'):
             break
@@ -42,10 +42,7 @@ def work(filename):
         elif k == "CNT_EM_EVENT":
             cnt = int(v)
 
-    res = ""
-    if cnt:
-        res = '{}\t{}\t{}'.format(ts, cnt, corrupted)
-#    	sys.stdout.flush()
+    res = '{}\t{}\t{}'.format(ts, cnt, corrupted)
 
     return res
 

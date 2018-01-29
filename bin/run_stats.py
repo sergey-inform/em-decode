@@ -15,8 +15,8 @@ import multiprocessing as mp
 from time import sleep
 
 PROG='./em-parse'
-CRATE=1
-RUN_DIR=sys.argv[1]
+CRATE=sys.argv[1]
+RUN_DIR=sys.argv[2]
 TIMEOUT=3600  # seconds 
 
 def work(filename):
@@ -44,7 +44,6 @@ def work(filename):
     if cnt:
         print('{}\t{}\t{}'.format(ts, cnt, corrupted))
 
-    sleep(1)
     return 0
 
 if __name__ == '__main__':

@@ -17,6 +17,7 @@ from time import sleep
 PROG='./em-parse'
 CRATE=1
 RUN_DIR=sys.argv[1]
+TIMEOUT=3600  # seconds 
 
 def work(filename):
     '''Defines the work unit on an input file'''
@@ -26,7 +27,6 @@ def work(filename):
     
     #get timestamp from filename
     ts = filename.rsplit('.',2)[0].rsplit('-')[-1]
-
 
     #get output values
     cnt, corrupted = None, None
@@ -44,6 +44,7 @@ def work(filename):
     if cnt:
         print('{}\t{}\t{}'.format(ts, cnt, corrupted))
 
+    sleep(1)
     return 0
 
 if __name__ == '__main__':
@@ -58,14 +59,14 @@ if __name__ == '__main__':
 
     #Run the jobs
     try:
-        res = pool.map_async(work, tasks)
-        res.get(30) # Without the timeout this blocking call ignores all signals.
+        res = pool.map_async(work, tasks)  # for each task run a work process
+        res.get(TIMEOUT)  # Without the timeout this blocking call ignores all signals. 
+                     # BUG: https://bugs.python.org/issue8296
+        pool.close()  # Every task is complete
 
     except KeyboardInterrupt:
         pool.terminate()
 
-    else:
-        pool.close()
-
-    pool.join()
+    finally:
+        pool.join()
 

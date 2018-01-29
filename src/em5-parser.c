@@ -44,7 +44,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		}
 	}
 
-	// Take some action depending on word class and previous protocol state (if any)
+	// Take some action depending on word class and previous protocol state
 	switch (parser->state) 
 	{
 	case NO_STATE:

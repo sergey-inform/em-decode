@@ -4,7 +4,7 @@
 CC = gcc
 CFLAGS = -std=c11 -Wall -pedantic 
 
-TARGETS := em-parse em-debug #em-stats
+TARGETS := em-parse em-dump #em-stats
 OBJS := em5-parser.o
 
 %.o: %.c
@@ -19,7 +19,7 @@ all: $(TARGETS)
 em-parse: em-parse.o $(OBJS)
 	$(CC) $(CFLAGS)  $^ -o $@
 
-em-debug: em-debug.o $(OBJS)
+em-dump: em-debug.o $(OBJS)
 	$(CC) $(CFLAGS)  $^ -o $@
 
 

@@ -22,7 +22,7 @@
 #include "uDAQ.h"
 
 
-const char *argp_program_version = "em-debug 1.0";
+const char *argp_program_version = "em-dump 1.2";
 const char *argp_program_bug_address = "\"Sergey Ryzhikov\" <sergey.ryzhikov@ihep.ru>";
 static char doc[] = "\n" \
 	"Parse EuroMISS raw data file, print decoded data with errors to stdout.\n" \
@@ -75,7 +75,7 @@ parse_opt(int key, char *arg, struct argp_state *state)
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
 
-int em_debug( FILE * infile, FILE * outfile, struct args * args)
+int em_dump( FILE * infile, FILE * outfile, struct args * args)
 /** Process data with em5 state machine. 
 Prints errors/debug info to outfile.
 */
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	err = em_debug(infile, stdout, &args);
+	err = em_dump(infile, stdout, &args);
 
 	if (infile)	fclose(infile);
 

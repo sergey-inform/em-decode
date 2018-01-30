@@ -5,9 +5,11 @@
  * Made for SPASCHARM experiment.
  */
 
+#define _GNU_SOURCE
+
+#include <stdio.h>  //fdopen, fileno
 #include <argp.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <error.h>
 #include <string.h>
 #include <stdlib.h> //malloc()
@@ -15,8 +17,6 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <sysexits.h>
-
-#include <assert.h>
 
 #include "em5-parser.h"
 #include "uDAQ.h"
@@ -88,6 +88,8 @@ Prints errors/debug info to outfile.
 	enum em5_parser_ret ret;
 	int len_diff;
 
+
+
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
 		if (bytes != sizeof(emword)) {
@@ -96,8 +98,9 @@ Prints errors/debug info to outfile.
 		}
 		
 		ret = em5_parser_next(&parser, wrd);
-
-		if (!args->quiet || (ret > RET_ERROR) ) {
+		
+		// Print dump
+		if ((ret > RET_ERROR) || ! args->quiet ) {
 			
 			if (parser.state == PCH_DATA)  // instead of parser state decode address for data words 
 				fprintf(outfile, "%06lx  %04x %04x  %02d %02d  %s \n"
@@ -118,7 +121,8 @@ Prints errors/debug info to outfile.
 					,ret != RET_OK ? em5_parser_retstr[ret] : parser.evt.corrupt ? "X" : "."
 					);
 		}
-	
+		
+		// Print events
 		if (ret == RET_EVENT && args->events) {
 			len_diff = (int)(parser.evt.len & EM_STATUS_COUNTER) - parser.evt.len_1f;
 

@@ -19,7 +19,7 @@ all: $(TARGETS)
 em-parse: em-parse.o $(OBJS)
 	$(CC) $(CFLAGS)  $^ -o $@
 
-em-dump: em-debug.o $(OBJS)
+em-dump: em-dump.o $(OBJS)
 	$(CC) $(CFLAGS)  $^ -o $@
 
 

@@ -118,7 +118,7 @@ Prints errors/debug info to outfile.
 					,wrd.data
 					,wrd.addr
 					,em5_protocol_state_str[parser.state]
-					,ret != RET_OK ? em5_parser_retstr[ret] : parser.evt.corrupt ? "X" : "."
+					,ret != RET_OK && ret != RET_EVENT ? em5_parser_retstr[ret] : parser.evt.corrupt ? "X" : "."
 					);
 		}
 		

@@ -5,6 +5,8 @@
  * Made for SPASCHARM experiment.
  */
 
+#define _GNU_SOURCE
+
 #include <argp.h>
 #include <error.h>
 #include <string.h> //strcmp

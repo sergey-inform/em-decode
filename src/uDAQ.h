@@ -25,8 +25,11 @@ struct daq_event_info {
 */
 };
 
-static_assert(sizeof(struct daq_event_info) == DAQ_EVENT_INFO_SZ,
-		"daq_event_header gets wrong size in your compiler. fix it or nothing will work!" );
+//static_assert(sizeof(struct daq_event_info) == DAQ_EVENT_INFO_SZ,
+//		"daq_event_header gets wrong size in your compiler. fix it or nothing will work!" );
+
+// Static assert
+char event_is_8_bytes_assertion[sizeof(struct daq_event_info) == 8 ? 1 : -1];
 
 
 

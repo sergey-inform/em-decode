@@ -35,12 +35,13 @@ static struct argp_option options[] = {
 	{0,0,0,0, "If no FILENAME, waits for data in stdin." },
 	{0,0,0,0, "Options:" },
 	{ "events", 'e', 0, 0, "Print event data."},
+	{ "nodec", 'd', 0, 0, "Do not show data in decimal."},
 	{ "quiet", 'q', 0, 0, "Print only errors"},
 	{ 0 } 
 };
 
 struct args {
-	bool events, quiet;
+	bool events, quiet, nodec;
 	char *infile;
 };
 
@@ -52,6 +53,7 @@ parse_opt(int key, char *arg, struct argp_state *state)
 	switch (key) {
 		case 'q': args->quiet = true; break;
 		case 'e': args->events = true; break;
+		case 'd': args->nodec = true; break;
 
 		case ARGP_KEY_NO_ARGS:
 			argp_usage(state);
@@ -84,7 +86,7 @@ Prints errors/debug info to outfile.
 	size_t bytes = 0;
 	emword wrd;
 
-	struct em5_parser parser = {0};
+	struct em5_parser parser = {{0}};
 	enum em5_parser_ret ret;
 	int len_diff;
 
@@ -102,19 +104,28 @@ Prints errors/debug info to outfile.
 		// Print dump
 		if ((ret > RET_ERROR) || ! args->quiet ) {
 			
-			if (parser.state == PCH_DATA)  // instead of parser state decode address for data words 
-				fprintf(outfile, "%06lx  %04x %04x  %02d %02d  %s \n"
-					,wofft
-					,wrd.data
-					,wrd.addr
-					,EM_ADDR_MOD(wrd.addr)
-					,EM_ADDR_CHAN(wrd.addr)
-					,em5_parser_retstr[ret]
-					);
+			if (parser.state == PCH_DATA)  // instead of parser state decode address and data words 
+				if (args->nodec)  // no decode
+					fprintf(outfile, "%06lx  %04x %04x  %s \n"
+						,(long unsigned int)wofft
+						,wrd.data
+						,wrd.addr
+						,em5_parser_retstr[ret]
+						);
+				else
+					fprintf(outfile, "%06lx  %04x %04x | %5d %02d %02d | %s \n"
+						,(long unsigned int)wofft
+						,wrd.data
+						,wrd.addr
+						,wrd.data
+						,EM_ADDR_MOD(wrd.addr)
+						,EM_ADDR_CHAN(wrd.addr)
+						,em5_parser_retstr[ret]
+						);
 		
 			else 
 				fprintf(outfile, "%06lx  %04x %04x  %5s  %s \n"
-					,wofft
+					,(long unsigned int)wofft
 					,wrd.data
 					,wrd.addr
 					,em5_protocol_state_str[parser.state]

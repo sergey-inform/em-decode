@@ -116,7 +116,7 @@ Prints error counts and stats to errfile.
 	emword wrd;
 	unsigned word_count;
 
-	struct em5_parser parser = {0};
+	struct em5_parser parser = {{0}};
 	enum em5_parser_ret ret;
 
 
@@ -131,6 +131,9 @@ Prints error counts and stats to errfile.
 		
 		if (ret == RET_EVENT) {
 			//FIXME: output struct event_info to outfile
+			if (outfile) {
+				//
+			}
 		}
 
 		wofft += 1;
@@ -193,7 +196,8 @@ int main(int argc, char *argv[])
 	// outfile
 	if ( !strcmp(args.outfile, "-") ) {  // output to stdout
 		if (isatty(fileno(stdout))) {  // stdout printed on terminal
-			error(EX_USAGE, 0, "Binary output to terminal, srsly? Pipe it to em-dump for printable output!");
+			// Just produce no output, silently (useful for printing statistics)
+			outfile = NULL; 
 		}
 		else {
 			outfile = fdopen(dup(fileno(stdout)), "wb"); // force binary output ...

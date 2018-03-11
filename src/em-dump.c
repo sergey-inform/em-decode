@@ -89,9 +89,14 @@ Prints errors/debug info to outfile.
 	struct em5_parser parser = {{0}};
 	enum em5_parser_ret ret;
 	int len_diff;
+	unsigned errcnt = 0;
 
+	int prwidth = 12;
 
+	if (args->nodec)
+		prwidth = 5;
 
+	
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
 		if (bytes != sizeof(emword)) {
@@ -103,33 +108,36 @@ Prints errors/debug info to outfile.
 		
 		// Print dump
 		if ((ret > RET_ERROR) || ! args->quiet ) {
-			
+			errcnt +=1; 	
 			if (parser.state == PCH_DATA)  // instead of parser state decode address and data words 
 				if (args->nodec)  // no decode
-					fprintf(outfile, "%06lx  %04x %04x  %s \n"
+					fprintf(outfile, "%06lx  %04x %04x  %-*s  %s \n"
 						,(long unsigned int)wofft
 						,wrd.data
 						,wrd.addr
+						,prwidth  // field width
+						,"."
 						,em5_parser_retstr[ret]
 						);
-				else
-					fprintf(outfile, "%06lx  %04x %04x | %5d %02d %02d | %s \n"
+				else  // decode hex as dec
+					fprintf(outfile, "%06lx  %04x %04x | %02d %02d %5d  %s \n"
 						,(long unsigned int)wofft
 						,wrd.data
 						,wrd.addr
-						,wrd.data
 						,EM_ADDR_MOD(wrd.addr)
 						,EM_ADDR_CHAN(wrd.addr)
+						,wrd.data
 						,em5_parser_retstr[ret]
 						);
 		
 			else 
-				fprintf(outfile, "%06lx  %04x %04x  %5s  %s \n"
+				fprintf(outfile, "%06lx  %04x %04x  %-*s  %s \n"
 					,(long unsigned int)wofft
 					,wrd.data
 					,wrd.addr
+					,prwidth  // field width
 					,em5_protocol_state_str[parser.state]
-					,ret != RET_OK && ret != RET_EVENT ? em5_parser_retstr[ret] : parser.evt.corrupt ? "X" : "."
+					,ret != RET_OK && ret != RET_EVENT ? em5_parser_retstr[ret] : parser.evt.corrupt ? "X" : "-"
 					);
 		}
 		
@@ -155,6 +163,7 @@ Prints errors/debug info to outfile.
 		wofft += 1;
 	}
 
+	if (errcnt) return 1; 
 	return 0; 
 }
 

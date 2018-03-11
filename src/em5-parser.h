@@ -31,7 +31,7 @@ enum em5_parser_ret{
 
 
 static const char UNUSED *em5_parser_retstr[] = {
-	[RET_OK] = "."
+	[RET_OK] = "-"
 	, [RET_EVENT] = "CNT_EM_EVENT"
 	, [RET_SYNC] = "CNT_EM_SYNC_EVENT"
 	, [RET_END_SPILL] = "CNT_END_SPILL"

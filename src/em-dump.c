@@ -26,16 +26,34 @@ const char *argp_program_version = "em-dump 1.2";
 const char *argp_program_bug_address = "\"Sergey Ryzhikov\" <sergey.ryzhikov@ihep.ru>";
 static char doc[] = "\n" \
 	"Parse EuroMISS raw data file, print decoded data with errors to stdout.\n" \
+	"Use it to understand what's wrong in data." \
 	"\v" \
-	"Use it to understand what's wrong in data.";
+	" Columns: \n" \
+	"  offset  data addr [ mod(dec) chan(dec) data(dec) | state ] errstr\n" \
+	"\n" \
+	" Example: \n" \
+	"  000000  7331 00be  PCHI          - \n" \
+	"  000001  0c80 0001 | 01 00  3200  - \n" \
+	"  000002  0300 0001 | 01 00   768  - \n" \
+	"  ...\n" \
+	"  003576  1313 0001 | 01 00  4883  - \n" \
+	"  003577  0313 0002 | 02 00   787  - \n" \
+	"  003578  0313 0002 | 02 00   787  ERR_EM_DUPWORD \n" \
+	"  ...\n" \
+	"  00359a  1313 0007 | 07 00  4883  - \n" \
+	"  00359b  002b 001f  END           X \n" \
+	"  00359c  07cf 00fe  -             X \n" \
+	"\n" \
+	"  `X` in errstr means the event is corrupted\n" \
+	"";
 
 static char args_doc[] = "[FILENAME]";
 
 static struct argp_option options[] = { 
 	{0,0,0,0, "If no FILENAME, waits for data in stdin." },
 	{0,0,0,0, "Options:" },
-	{ "events", 'e', 0, 0, "Print event data."},
-	{ "nodec", 'd', 0, 0, "Do not show data in decimal."},
+	{ "events", 'e', 0, 0, "Print event data"},
+	{ "nodec", 'd', 0, 0, "Do not show data in decimal"},
 	{ "quiet", 'q', 0, 0, "Print only errors"},
 	{ 0 } 
 };

@@ -142,19 +142,19 @@ Prints error counts and stats to errfile.
 	/// Print event counters
 	for (int i = RET_EVENT; i<RET_ERROR; i++) {
 		if(em5_parser_retstr[i] && parser.ret_cnt[i])
-			fprintf(errfile, "%d\t %s \n"
-				, parser.ret_cnt[i]
+			fprintf(errfile, "%s\t %d \n"
 				, em5_parser_retstr[i]
+				, parser.ret_cnt[i]
 				);
 	}
 
-	fprintf(errfile, "%d\t %s \n"	
-		, parser.corrupted_cnt
+	fprintf(errfile, "%s\t %d \n"	
 		,"CNT_EM_EVENT_CORRUPTED"
+		, parser.corrupted_cnt
 		);
 	
 	/// Print word counters
-	fprintf(errfile, "--\n");
+	fprintf(errfile, "-- Errors:\n");
 
 	word_count = 0;
 	for (int i = 0; i< MAX_EM5_PARSER_RET; i++) 

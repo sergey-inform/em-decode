@@ -19,10 +19,13 @@ FILE * gzopen(const char * filename)
  */
 {
 	int fd;
+	int fd_stdin;
+	FILE * file;
 
 	if ( !strcmp(filename, "-") ) {  // get input from stdin
 		if (isatty(fileno(stdin))) {  // stdin is a terminal
-			perror("No input file specified, stdin is a terminal. RTFM\n");
+			fprintf(stderr, "%s: No input file specified, stdin is a terminal. RTFM! \n",
+                                        program_invocation_short_name);
 			return NULL;
 		}
 	}
@@ -33,9 +36,12 @@ FILE * gzopen(const char * filename)
 					program_invocation_short_name, filename, strerror (errno));
 			return NULL;
 		}
+		fd_stdin = dup(STDIN_FILENO);
 		dup2(fd, STDIN_FILENO);
 	}
 
-	return popen("gzip -dcfq -", "r");
-
+	file = popen("gzip -dcfq -", "r");
+	
+	dup2(fd_stdin, STDIN_FILENO);  // restore stdin	
+	return file;	
 }

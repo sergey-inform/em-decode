@@ -199,6 +199,8 @@ int main(int argc, char *argv[])
 	args.infile = "-";	
 	
 	argp_parse(&argp, argc, argv, 0, 0, &args);
+
+	//TODO:	infile = gzopen(args.infile);
 	
 	// infile
 	if ( !strcmp(args.infile, "-") ) {  // get input from stdin

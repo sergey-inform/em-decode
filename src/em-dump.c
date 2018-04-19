@@ -20,6 +20,7 @@
 
 #include "em5-parser.h"
 #include "uDAQ.h"
+#include "gzopen.h"
 
 
 const char *argp_program_version = "em-dump 1.2";
@@ -74,7 +75,8 @@ parse_opt(int key, char *arg, struct argp_state *state)
 		case 'd': args->nodec = true; break;
 
 		case ARGP_KEY_NO_ARGS:
-			argp_usage(state);
+			args->infile = "-";  // default
+			break; 
 
 		case ARGP_KEY_ARG: 
 			if (state->arg_num == 0) {  // FILENAME
@@ -191,45 +193,12 @@ int main(int argc, char *argv[])
 	struct args args = {0};
 	FILE * infile = NULL;
 	int err;
-	char * lastdot;
-	char gzcmd[256];
-	
-
-	// Defaults
-	args.infile = "-";	
 	
 	argp_parse(&argp, argc, argv, 0, 0, &args);
+	infile = gzopen(args.infile);
 
-	//TODO:	infile = gzopen(args.infile);
-	
-	// infile
-	if ( !strcmp(args.infile, "-") ) {  // get input from stdin
-		if (isatty(fileno(stdin))) {  // stdin is a terminal
-			error(EX_USAGE, errno, "No input file specified, stdin is a terminal. RTFM.\n");
-		}
-		else {
-			infile = fdopen(dup(fileno(stdin)), "rb");
-		}
-	} else {
-		infile = fopen( args.infile, "rbm");
-		if (infile == NULL) {
-			error(EX_NOINPUT, errno, "can't open file '%s'", args.infile);
-		}
-	}
-
-	// if infile have .gz extension, fork gzip -cdfq
-	//TODO: peek first two bytes instead and check gzip magic number: (byte1 == 0x1f) && (byte2 == 0x8b)
-	lastdot = strrchr(args.infile, '.');
-	if (lastdot && !strcmp(lastdot, ".gz")) {	
-		strcpy(gzcmd, "gzip -dcfq -- ");
-		strncat(gzcmd, args.infile, sizeof(gzcmd)-strlen(gzcmd));
-		//fprintf(stderr, "uncompress with gzip %s\n", gzcmd);
-		infile = popen(gzcmd, "r");
-	}
-
-	err = em_dump(infile, stdout, &args);
-
-	if (infile)	fclose(infile);
+	if (infile)
+		err = em_dump(infile, stdout, &args);
 
 	return err;
 }

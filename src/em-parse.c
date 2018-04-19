@@ -17,6 +17,7 @@
 
 #include "em5-parser.h"
 #include "uDAQ.h"
+#include "gzopen.h"
 
 
 const char *argp_program_version = "em-parse 2.0";
@@ -65,7 +66,9 @@ parse_opt(int key, char *arg, struct argp_state *state)
 			break;
 
 		case ARGP_KEY_NO_ARGS:
-			argp_usage(state);
+			// stdin by default;
+			args->infile = "-";
+			break;
 
 		case ARGP_KEY_ARG: 
 			if (state->arg_num == 0) {  // FILENAME
@@ -186,18 +189,17 @@ int main(int argc, char *argv[])
 	FILE * infile = NULL;
 	int err;
 
-	// Defaults
-	args.outfile = "-";
-	args.infile = "-";	
-	
+	args.outfile = "-";  // default
 	argp_parse(&argp, argc, argv, 0, 0, &args);
 	//dump_args(&args);
 	
 	// outfile
 	if ( !strcmp(args.outfile, "-") ) {  // output to stdout
 		if (isatty(fileno(stdout))) {  // stdout printed on terminal
-			// Just produce no output, silently (useful for printing statistics)
-			outfile = NULL; 
+			errno = EPIPE;
+			fprintf(stderr, "%s: Attempt to send binary output to terminal; %s\n",
+                                        program_invocation_short_name, strerror (errno));
+			exit(EX_USAGE);
 		}
 		else {
 			outfile = fdopen(dup(fileno(stdout)), "wb"); // force binary output ...
@@ -209,26 +211,11 @@ int main(int argc, char *argv[])
 			error(EX_IOERR, errno, "can't open file '%s'", args.outfile);
 		}
 	}
+	
+	infile = gzopen(args.infile);
 
-	// infile
-	if ( !strcmp(args.infile, "-") ) {  // get input from stdin
-		if (isatty(fileno(stdin))) {  // stdin is a terminal
-			error(EX_USAGE, errno, "No input file specified, stdin is a terminal. RTFM.\n");
-		}
-		else {
-			infile = fdopen(dup(fileno(stdin)), "rb");
-		}
-	} else {
-		infile = fopen( args.infile, "rbm");
-		if (infile == NULL) {
-			error(EX_NOINPUT, errno, "can't open file '%s'", args.infile);
-		}
-	}
-
-	err = em_parse(infile, outfile, stderr, &args);
-
-	if (infile)	fclose(infile);
-	if (outfile)	fclose(outfile);
+	if (infile && outfile)
+		err = em_parse(infile, outfile, stderr, &args);
 
 	return err;
 }

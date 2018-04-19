@@ -191,6 +191,9 @@ int main(int argc, char *argv[])
 	struct args args = {0};
 	FILE * infile = NULL;
 	int err;
+	char * lastdot;
+	char gzcmd[256];
+	
 
 	// Defaults
 	args.infile = "-";	
@@ -210,6 +213,16 @@ int main(int argc, char *argv[])
 		if (infile == NULL) {
 			error(EX_NOINPUT, errno, "can't open file '%s'", args.infile);
 		}
+	}
+
+	// if infile have .gz extension, fork gzip -cdfq
+	//TODO: peek first two bytes instead and check gzip magic number: (byte1 == 0x1f) && (byte2 == 0x8b)
+	lastdot = strrchr(args.infile, '.');
+	if (lastdot && !strcmp(lastdot, ".gz")) {	
+		strcpy(gzcmd, "gzip -dcfq -- ");
+		strncat(gzcmd, args.infile, sizeof(gzcmd)-strlen(gzcmd));
+		//fprintf(stderr, "uncompress with gzip %s\n", gzcmd);
+		infile = popen(gzcmd, "r");
 	}
 
 	err = em_dump(infile, stdout, &args);

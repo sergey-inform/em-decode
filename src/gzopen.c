@@ -19,7 +19,7 @@ FILE * gzopen(const char * filename)
  */
 {
 	int fd;
-	int fd_stdin;
+	int fd_stdin = 0;
 	FILE * file;
 
 	if ( !strcmp(filename, "-") ) {  // get input from stdin

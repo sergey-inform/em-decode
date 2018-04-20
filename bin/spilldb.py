@@ -15,3 +15,21 @@ def shardname(timestamp, format="%y%m%d-%H"):
                 int(timestamp)
             ).strftime(format)
             
+
+def allspills(rootdir, ext=".dat.gz"):
+    """
+
+    """
+    from glob import iglob
+    from os.path import basename
+
+    spills = set()
+    globpath = str(rootdir) + "/**/*" + str(ext)
+    
+    for filename in iglob(globpath, recursive=True):
+        fn = basename(filename)[:-len(ext)] 
+                    # rootdir/sub/1521331424.6.dat.gz -> '1521331424.6' 
+        ts = int(fn[:10])  # '1521331424.6' -> 1521331424
+        spills.add(ts)
+
+    return spills

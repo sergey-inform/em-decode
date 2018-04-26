@@ -124,6 +124,7 @@ struct em5_parser {
 		} evt; 
 
 	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // return value counters
+	unsigned evt_cnt;  //event_counter
 	unsigned dirty_cnt;  // dirty events couner
 	};
 

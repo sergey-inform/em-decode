@@ -213,9 +213,12 @@ int main(int argc, char *argv[])
 	}
 	
 	infile = gzopen(args.infile);
+	if (!infile) 
+		error(EX_IOERR, errno, "can't open file '%s'", args.infile);	
 
 	if (infile && outfile)
 		err = em_parse(infile, outfile, stderr, &args);
+	
 
 	return err;
 }

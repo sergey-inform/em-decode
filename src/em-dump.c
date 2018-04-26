@@ -127,7 +127,7 @@ Prints errors/debug info to outfile.
 		ret = em5_parser_next(&parser, wrd);
 		
 		// Print dump
-		if ((ret > RET_ERROR) || ! args->quiet ) {
+		if ((ret > RET_WARNING) || ! args->quiet ) {
 			errcnt +=1; 	
 			if (parser.state == PCH_DATA)  // instead of parser state decode address and data words 
 				if (args->nodec)  // no decode

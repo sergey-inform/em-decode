@@ -45,7 +45,8 @@ def work(filename):
             elif k == b"CNT_EM_EVENT":
                 cnt = int(v)
             else:
-                sys.stderr.write("{}\n".format(k))
+                #sys.stderr.write("{}\n".format(k))
+                pass
 
         except ValueError as e:
             logging.error("{}, line: {}".format(e, line))

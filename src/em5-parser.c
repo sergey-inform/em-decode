@@ -80,7 +80,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 			break;
 
 		case WORD_DUP:
-			ret = ERR_DMA_OVERREAD;  // known hardware bug
+			ret = WARN_DMA_OVERREAD;  // known hardware bug
 			break;
 
 		default:
@@ -110,7 +110,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		
 		case WORD_DUP:
 			next_state = parser->state; //no change
-			ret = ERR_DMA_OVERREAD;
+			ret = WARN_DMA_OVERREAD;
 			break;
 
 		default:
@@ -173,7 +173,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 
 		// check MISS addresses are ascending
 		if (parser->evt.prev_mod > EM_ADDR_MOD(wrd.addr)) {
-			ret = ERR_MISS_ADDR_ORDER;
+			ret = WARN_MISS_ADDR_ORDER;
 		}
 
 		parser->evt.prev_mod = EM_ADDR_MOD(wrd.addr);
@@ -181,10 +181,8 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 
 
 	if (ret >= RET_ERROR && !parser->evt.corrupt) {  // if not corrupted already
-		if (ret != ERR_DMA_OVERREAD) {
-			parser->corrupted_cnt += 1;
-			parser->evt.corrupt = true;
-		}
+		parser->corrupted_cnt += 1;
+		parser->evt.corrupt = true;
 	}
 
 	parser->prev = wrd;

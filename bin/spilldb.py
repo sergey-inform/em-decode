@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 
+def name2ts(filename, ext=".dat.gz"):
+    """
+    '1521331424.6.dat.gz' -> 1521331424
+    Return None if file doesn't match extension or can not be converted.
+    """
+    if str(filename).endswith(ext):
+        try:
+            return int((filename[:-len(ext)])[:10])
+        except ValueError:
+            return None
+    else:
+        return None
+
 
 def shardname(timestamp, format="%y%m%d-%H"):
     """
@@ -47,18 +60,6 @@ def walkspills(rootdir, ext=".dat.gz"):
     def handlerr(err):
         raise err
 
-    def name2ts(filename, ext=".dat.gz"):
-        """
-        '1521331424.6.dat.gz' -> 1521331424
-        Return None if file doesn't match extension or can not be converted.
-        """
-        if str(filename).endswith(ext):
-            try:
-                return int((filename[:-len(ext)])[:10])
-            except ValueError:
-                return None
-        else:
-            return None
 
     #TODO: support globs
     for root, dirs, files in walk(rootdir,

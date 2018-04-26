@@ -45,7 +45,7 @@ static char doc[] = "\n" \
 	"  00359b  002b 001f  END           X \n" \
 	"  00359c  07cf 00fe  -             X \n" \
 	"\n" \
-	"  `X` in errstr means the event is corrupted\n" \
+	"  `X` in errstr means the event is dirty\n" \
 	"";
 
 static char args_doc[] = "[FILENAME]";
@@ -157,7 +157,7 @@ Prints errors/debug info to outfile.
 					,wrd.addr
 					,prwidth  // field width
 					,em5_protocol_state_str[parser.state]
-					,ret != RET_OK && ret != RET_EVENT ? em5_parser_retstr[ret] : parser.evt.corrupt ? "X" : "-"
+					,ret != RET_OK && ret != RET_EVENT ? em5_parser_retstr[ret] : parser.evt.dirty ? "X" : "-"
 					);
 		}
 		
@@ -176,7 +176,7 @@ Prints errors/debug info to outfile.
 				fprintf(outfile, "(%d)", len_diff);
 
 			fprintf(outfile, "  %s \n",
-				parser.evt.corrupt? "CORRUPT" : "OK"
+				parser.evt.dirty? "CORRUPT" : "OK"
 				);
 
 		}

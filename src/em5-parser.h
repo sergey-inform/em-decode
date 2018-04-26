@@ -118,13 +118,13 @@ struct em5_parser {
 		unsigned len_1f; // length according to MISS
 		unsigned prev_mod;  // previous module position number
 		unsigned cnt;  // event word counter
-		bool corrupt; // event is corrupted
+		bool dirty; // event is dirty
 		unsigned mod_offt[EM_MAX_MODULE_NUM];  // event data offset
 		unsigned mod_cnt[EM_MAX_MODULE_NUM]; // word counter per module
 		} evt; 
 
 	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // return value counters
-	unsigned corrupted_cnt;  // corrupted events couner
+	unsigned dirty_cnt;  // dirty events couner
 	};
 
 enum em5_parser_ret em5_parser_next(struct em5_parser *, emword);

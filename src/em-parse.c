@@ -122,6 +122,9 @@ Prints error counts and stats to errfile.
 	struct em5_parser parser = {{0}};
 	enum em5_parser_ret ret;
 
+	struct daq_event_info event = {0};
+	unsigned ts_prev = 0;	
+
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
@@ -133,10 +136,16 @@ Prints error counts and stats to errfile.
 		ret = em5_parser_next(&parser, wrd);
 		
 		if (ret == RET_EVENT) {
-			//FIXME: output struct event_info to outfile
+			// output struct event_info to outfile
+			//
 			if (outfile) {
-				//
-				fprintf(outfile, "%d\n", parser.evt.ts);
+				// fill struct
+				event.ts = parser.evt.ts;
+				// write to file
+				fwrite(&event, sizeof(event), 1, outfile);
+				// clean up
+				ts_prev = event.ts;
+				memset(&event, 0, sizeof(event));
 			}
 		}
 

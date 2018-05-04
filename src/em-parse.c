@@ -136,6 +136,7 @@ Prints error counts and stats to errfile.
 			//FIXME: output struct event_info to outfile
 			if (outfile) {
 				//
+				fprintf(outfile, "%d\n", parser.evt.ts);
 			}
 		}
 

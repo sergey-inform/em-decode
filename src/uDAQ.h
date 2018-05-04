@@ -4,32 +4,31 @@
 
 #include <inttypes.h>
 
-#define DAQ_EVENT_INFO_SZ	8  //FIXME
+#define DAQ_EVENT_INFO_SZ	12  //FIXME
+
+enum daq_event_flags {
+	DAQ_EVENT_DATA	= 1 << 0,  // if true, offset is actually a data
+	DAQ_EVENT_DIRTY	= 1 << 1,
+	DAQ_EVENT_SYNC	= 1 << 2,
+};
+
 
 struct daq_event_info {
 	uint32_t ts;  // timestamp
-	struct {
-		uint8_t crate;
-		uint8_t module;
-	} addr;
-	uint16_t flags;  //
-/*
+	uint8_t flags; //
+	uint8_t unit; // module num for EuroMISS;
+	uint16_t pad; // reserverd for xaddress
 	union {
-		struct {
-			uint16_t length;
-			uint16_t xxx;
-			uint32_t offset;
-		};
-		uint64_t data;
+		uint32_t woffset; // offset in 4-byte words
+		uint32_t data;
 	};
-*/
 };
 
 //static_assert(sizeof(struct daq_event_info) == DAQ_EVENT_INFO_SZ,
 //		"daq_event_header gets wrong size in your compiler. fix it or nothing will work!" );
 
 // Static assert
-char event_is_8_bytes_assertion[sizeof(struct daq_event_info) == 8 ? 1 : -1];
+char event_size_assertion[sizeof(struct daq_event_info) == DAQ_EVENT_INFO_SZ ? 1 : -1];
 
 
 

@@ -30,7 +30,7 @@ FILE * gzopen(const char * filename)
 		}
 	}
 	else {
-		fd = open(filename, O_RDONLY | O_NOATIME);
+		fd = open(filename, O_RDONLY );
 		if (fd == -1) {
 			fprintf(stderr, "%s: Couldn't open file %s; %s\n",
 					program_invocation_short_name, filename, strerror (errno));

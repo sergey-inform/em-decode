@@ -17,15 +17,17 @@ enum em5_parser_ret{
 	, RET_EVENT
 	, RET_SYNC
 	, RET_END_SPILL
+	, RET_WARNING
+	, WARN_DMA_OVERREAD
+	, WARN_MISS_ADDR_ORDER
 	, RET_ERROR
-	, ERR_DMA_OVERREAD
 	, ERR_DUP
 	, ERR_ZEROES
 	, ERR_ONES
 	, ERR_UNKNOWN_WORD
 	, ERR_PROTOCOL
 	, ERR_MISS_LEN
-	, ERR_MISS_ADDR_ORDER
+	, ERR_MISS_DUP_ADDR
 	, MAX_EM5_PARSER_RET  // the last element
 	};
 
@@ -35,7 +37,8 @@ static const char UNUSED *em5_parser_retstr[] = {
 	, [RET_EVENT] = "CNT_EM_EVENT"
 	, [RET_SYNC] = "CNT_EM_SYNC_EVENT"
 	, [RET_END_SPILL] = "CNT_END_SPILL"
-	, [ERR_DMA_OVERREAD] = "ERR_KNOWN_DMA_OVERREAD"  // DMA read full burst when no more data in buffer (always after 0xFE)
+	, [WARN_DMA_OVERREAD] = "WARN_KNOWN_DMA_OVERREAD"  // DMA read full burst when no more data in buffer (always after 0xFE)
+	, [WARN_MISS_ADDR_ORDER] = "WARN_MISS_ADDR_ORDER"	// MISS addresses not ascending during sequential readout.
 	, [ERR_DUP] = "ERR_EM_DUPWORD"	// Duplicate word.
 	, [ERR_ZEROES] = "ERR_EM_ZERO_WORD"	// A zero word.
 	, [ERR_ONES] = "ERR_EM_ONES_WORD"	// A word with all ones.
@@ -45,7 +48,7 @@ static const char UNUSED *em5_parser_retstr[] = {
 //	, [ERR_NO_BE]= "ERR_EM_NO_BE"	// Sudden event tail (0xFE).
 //	, [ERR_NO_1F] = "ERR_EM_NO_1F"	// Missing stats word (0x1F).
 	, [ERR_MISS_LEN] = "ERR_MISS_LEN"	// MISS event len counter != actual lengh.
-	, [ERR_MISS_ADDR_ORDER] = "ERR_MISS_ADDR_ORDER"	// MISS addresses not ascending during sequential readout.
+	, [ERR_MISS_DUP_ADDR] = "ERR_MISS_DUP_ADD"  // same MISS module twice in one event
 	};
 
 
@@ -115,13 +118,14 @@ struct em5_parser {
 		unsigned len_1f; // length according to MISS
 		unsigned prev_mod;  // previous module position number
 		unsigned cnt;  // event word counter
-		bool corrupt; // event is corrupted
+		bool dirty; // event is dirty
 		unsigned mod_offt[EM_MAX_MODULE_NUM];  // event data offset
 		unsigned mod_cnt[EM_MAX_MODULE_NUM]; // word counter per module
 		} evt; 
 
 	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // return value counters
-	unsigned corrupted_cnt;  // corrupted events couner
+	unsigned evt_cnt;  //event_counter
+	unsigned dirty_cnt;  // dirty events couner
 	};
 
 enum em5_parser_ret em5_parser_next(struct em5_parser *, emword);

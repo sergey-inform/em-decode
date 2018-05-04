@@ -144,7 +144,7 @@ Prints error counts and stats to errfile.
 	}
 
 	/// Print event counters
-	for (int i = RET_EVENT; i<RET_ERROR; i++) {
+	for (int i = RET_EVENT; i<RET_WARNING; i++) {
 		if(em5_parser_retstr[i] && parser.ret_cnt[i])
 			fprintf(errfile, "%s\t %d \n"
 				, em5_parser_retstr[i]
@@ -153,8 +153,8 @@ Prints error counts and stats to errfile.
 	}
 
 	fprintf(errfile, "%s\t %d \n"	
-		,"CNT_EM_EVENT_CORRUPTED"
-		, parser.corrupted_cnt
+		,"CNT_EM_EVENT_DIRTY"
+		, parser.dirty_cnt
 		);
 	
 	/// Print word counters
@@ -214,9 +214,12 @@ int main(int argc, char *argv[])
 	}
 	
 	infile = gzopen(args.infile);
+	if (!infile) 
+		error(EX_IOERR, errno, "can't open file '%s'", args.infile);	
 
 	if (infile && outfile)
 		err = em_parse(infile, outfile, stderr, &args);
+	
 
 	return err;
 }

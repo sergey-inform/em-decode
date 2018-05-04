@@ -9,7 +9,6 @@ import glob
 import signal
 import subprocess as sp
 import multiprocessing as mp
-from time import sleep
 import logging
 import argparse
 
@@ -22,7 +21,13 @@ def work(filename):
     '''Defines the work unit on an input file'''
     signal.signal(signal.SIGINT, signal.SIG_IGN)  #ignore Ctrl-C
 
-    out = sp.check_output([PROG, '{}'.format(filename)])
+
+    try:
+        out = sp.check_output([PROG, '{}'.format(filename)])
+    except sp.CalledProcessError as e:
+        logging.error(e.stderr)
+        return None
+    
 
     #get timestamp from filename
     ts = os.path.basename(filename)[:10]  # unixtime will be 10-byte long in next 268 years
@@ -40,9 +45,11 @@ def work(filename):
             elif k == b"CNT_EM_EVENT":
                 cnt = int(v)
             else:
-                sys.stderr.write("{}\n".format(k))
+                #sys.stderr.write("{}\n".format(k))
+                pass
 
-        except ValueError:
+        except ValueError as e:
+            logging.error("{}, line: {}".format(e, line))
             raise
 
     res = '{}\t{}\t{}\t{}'.format(ts, cnt, corrupted, filename)

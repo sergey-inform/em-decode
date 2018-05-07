@@ -110,8 +110,10 @@ Prints errors/debug info to outfile.
 	enum em5_parser_ret ret;
 	int len_diff;
 	unsigned errcnt = 0;
-
+	
 	int prwidth = 12;
+	const int COMMENT_LEN=63;
+	char comment[COMMENT_LEN+1];  // text for comment
 
 	if (args->nodec)
 		prwidth = 5;
@@ -125,22 +127,34 @@ Prints errors/debug info to outfile.
 		}
 		
 		ret = em5_parser_next(&parser, wrd);
+
+		// Specify comment
+		if (ret == ERR_MISS_LEN) {
+			snprintf(comment, COMMENT_LEN, "0x%x%+d",
+					parser.evt.len,
+					parser.evt.len_1f - parser.evt.len);
+		}
+		else {
+			comment[0]='\0';
+		}
+
 		
 		// Print dump
 		if ((ret > RET_WARNING) || ! args->quiet ) {
 			errcnt +=1; 	
 			if (parser.state == PCH_DATA)  // instead of parser state decode address and data words 
 				if (args->nodec)  // no decode
-					fprintf(outfile, "%06lx  %04x %04x  %-*s  %s \n"
+					fprintf(outfile, "%06lx  %04x %04x  %-*s  %s %s\n"
 						,(long unsigned int)wofft
 						,wrd.data
 						,wrd.addr
 						,prwidth  // field width
 						,"."
 						,em5_parser_retstr[ret]
+						,comment
 						);
 				else  // decode hex as dec
-					fprintf(outfile, "%06lx  %04x %04x | %02d %02d %5d  %s \n"
+					fprintf(outfile, "%06lx  %04x %04x | %02d %02d %5d  %s %s\n"
 						,(long unsigned int)wofft
 						,wrd.data
 						,wrd.addr
@@ -148,16 +162,18 @@ Prints errors/debug info to outfile.
 						,EM_ADDR_CHAN(wrd.addr)
 						,wrd.data
 						,em5_parser_retstr[ret]
+						,comment
 						);
 		
 			else 
-				fprintf(outfile, "%06lx  %04x %04x  %-*s  %s \n"
+				fprintf(outfile, "%06lx  %04x %04x  %-*s  %s %s\n"
 					,(long unsigned int)wofft
 					,wrd.data
 					,wrd.addr
 					,prwidth  // field width
 					,em5_protocol_state_str[parser.state]
 					,ret != RET_OK && ret != RET_EVENT ? em5_parser_retstr[ret] : parser.evt.dirty ? "X" : "-"
+					,comment
 					);
 		}
 		
@@ -173,10 +189,10 @@ Prints errors/debug info to outfile.
 
 			// print len_diff
 			if (len_diff)
-				fprintf(outfile, "(%d)", len_diff);
+				fprintf(outfile, "(%+d)", len_diff);
 
 			fprintf(outfile, "  %s \n",
-				parser.evt.dirty? "CORRUPT" : "OK"
+				parser.evt.dirty? "DIRTY" : "OK"
 				);
 
 		}

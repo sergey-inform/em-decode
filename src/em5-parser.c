@@ -1,4 +1,4 @@
-//#include <stdio.h>
+#include <stdio.h>
 
 #include "em.h"
 #include "em5-parser.h"
@@ -13,6 +13,8 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 	enum emword_class wrd_class = WORD_UNKNOWN;
 	enum em5_protocol_state next_state = NO_STATE;
 	bool append_data = false;  // if true, data is valid
+
+	struct em5_parser_event_info evt = parser->evt;	
 
 	// Classify the word, but our judgement is not final (class and ret could be adjusted later)
 	if (wrd.whole == 0x0U) {  // check it first
@@ -52,8 +54,8 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		{
 		case WORD_BEGIN_EVENT:
 		case WORD_BEGIN_ENUM:
-			memset(&parser->evt, 0, sizeof(struct em5_parser_event_info)); // flush
-			parser->evt.ts = wrd.data; //save timestamp low
+			memset(&evt, 0, sizeof(struct em5_parser_event_info)); // flush
+			evt.ts = wrd.data; //save timestamp low
 			
 			if (wrd_class == WORD_BEGIN_EVENT) {
 				next_state = PCHI_BEGIN;
@@ -130,10 +132,10 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		case WORD_STAT_1F:
 			next_state = PCH_END;
 
-			parser->evt.len += 1;
-			parser->evt.len_1f = (wrd.data & EM_STATUS_COUNTER);
+			evt.len += 1;
+			evt.len_1f = (wrd.data & EM_STATUS_COUNTER);
 
-			if( (parser->evt.len & EM_STATUS_COUNTER) != parser->evt.len_1f) {
+			if( (evt.len & EM_STATUS_COUNTER) != evt.len_1f) {
 				ret = ERR_MISS_LEN;
 			}
 			break;
@@ -154,7 +156,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		switch (wrd_class)
 		{
 		case WORD_END_EVENT:
-			parser->evt.ts += wrd.data << 16;  //save timestamp high
+			evt.ts += wrd.data << 16;  //save timestamp high
 			next_state = NO_STATE;
 			ret = RET_EVENT;
 			break;
@@ -168,21 +170,22 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 
 
 	if (append_data) {
-		parser->evt.len += 1;
-		parser->evt.mod_cnt[EM_ADDR_MOD(wrd.addr)] += 1;
+		evt.len += 1;
+		evt.mod_cnt[EM_ADDR_MOD(wrd.addr)] += 1;
+
 
 		// check MISS addresses are ascending
-		if (parser->evt.prev_mod > EM_ADDR_MOD(wrd.addr)) {
+		if (evt.prev_mod > EM_ADDR_MOD(wrd.addr)) {
 			ret = WARN_MISS_ADDR_ORDER;
 		}
 
-		parser->evt.prev_mod = EM_ADDR_MOD(wrd.addr);
+		evt.prev_mod = EM_ADDR_MOD(wrd.addr);
 	}
 
 
-	if (ret >= RET_ERROR && !parser->evt.dirty) {  // if not dirty already
+	if (ret >= RET_ERROR && !evt.dirty) {  // if not dirty already
 		parser->dirty_cnt += 1;
-		parser->evt.dirty = true;
+		evt.dirty = true;
 	}
 
 	parser->prev = wrd;

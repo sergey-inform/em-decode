@@ -120,7 +120,7 @@ struct em5_parser {
 		unsigned cnt;  // event word counter
 		bool dirty; // event is dirty
 		unsigned mod_offt[EM_MAX_MODULE_NUM];  // event data offset
-		unsigned mod_cnt[EM_MAX_MODULE_NUM]; // word counter per module
+		unsigned mod_cnt[EM_MAX_MODULE_NUM];  // word counter per module
 		} evt; 
 
 	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // return value counters

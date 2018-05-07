@@ -1,7 +1,7 @@
 #
 .SUFFIXES: .c .o .h
 
-CC = gcc
+CC = gcc -g
 CFLAGS = -std=c11 -Wall -pedantic 
 
 TARGETS := em-parse em-dump #em-stats

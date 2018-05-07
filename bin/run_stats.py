@@ -37,20 +37,21 @@ def work(filename):
     for line in out.splitlines():
         if line.startswith(b'--'):
             break
-        try:        
-            k, v = line.split()
+        elif line.startswith(b'CNT_'):
+            try:        
+                k, v = line.split(maxsplit=1)
 
-            if k == b"CNT_EM_EVENT_CORRUPTED":
-                corrupted = int(v)
-            elif k == b"CNT_EM_EVENT":
-                cnt = int(v)
-            else:
-                #sys.stderr.write("{}\n".format(k))
-                pass
+                if k == b"CNT_EM_EVENT_DIRTY":
+                    corrupted = int(v)
+                elif k == b"CNT_EM_EVENT":
+                    cnt = int(v)
+                else:
+                    #sys.stderr.write("{}\n".format(k))
+                    pass
 
-        except ValueError as e:
-            logging.error("{}, line: {}".format(e, line))
-            raise
+            except ValueError as e:
+                logging.error("{}, line: {}, file {}".format(e, line, filename))
+                raise
 
     res = '{}\t{}\t{}\t{}'.format(ts, cnt, corrupted, filename)
 

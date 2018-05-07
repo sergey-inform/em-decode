@@ -171,7 +171,7 @@ Prints error counts and stats to errfile.
 
 	word_count = 0;
 	for (int i = 0; i< MAX_EM5_PARSER_RET; i++) 
-		word_count += parser.ret_cnt[i];
+		word_count += parser.ret_cnt[i];  //FIXME: use parser.word_cnt
 	
 	fprintf(errfile, "%-25s\t %d \n"
 		,"WORDS_TOTAL"

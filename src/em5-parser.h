@@ -48,7 +48,7 @@ static const char UNUSED *em5_parser_retstr[] = {
 //	, [ERR_NO_BE]= "ERR_EM_NO_BE"	// Sudden event tail (0xFE).
 //	, [ERR_NO_1F] = "ERR_EM_NO_1F"	// Missing stats word (0x1F).
 	, [ERR_MISS_LEN] = "ERR_MISS_LEN"	// MISS event len counter != actual lengh.
-	, [ERR_MISS_DUP_ADDR] = "ERR_MISS_DUP_ADD"  // same MISS module twice in one event
+	, [ERR_MISS_DUP_ADDR] = "ERR_MISS_DUP_ADDR"  // same MISS module twice in one event
 	};
 
 
@@ -124,7 +124,8 @@ struct em5_parser {
 		} evt; 
 
 	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // return value counters
-	unsigned evt_cnt;  //event_counter
+	unsigned word_cnt;  // word counter since init
+	unsigned evt_cnt;  // event_counter
 	unsigned dirty_cnt;  // dirty events couner
 	};
 

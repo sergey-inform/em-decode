@@ -14,7 +14,9 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 	enum em5_protocol_state next_state = NO_STATE;
 	bool append_data = false;  // if true, data is valid
 
-	struct em5_parser_event_info * evt = &(parser->evt);	
+	struct em5_parser_event_info * evt = &(parser->evt);
+	int mod;
+	
 
 	// Classify the word, but our judgement is not final (class and ret could be adjusted later)
 	if (wrd.whole == 0x0U) {  // check it first
@@ -170,16 +172,25 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 
 
 	if (append_data) {
+		mod = EM_ADDR_MOD(wrd.addr); 
 		evt->len += 1;
-		evt->mod_cnt[EM_ADDR_MOD(wrd.addr)] += 1;
+		
+		if (evt->prev_mod != mod) {  // data for another module
+			evt->mod_offt[mod] = parser->word_cnt * sizeof(emword);
 
+			if (evt->mod_cnt[mod] != 0) {
+				// we have seen this module in this event already
+				ret = ERR_MISS_DUP_ADDR;
+			}
+		}
 
-		// check MISS addresses are ascending
 		if (evt->prev_mod > EM_ADDR_MOD(wrd.addr)) {
+			// MISS addresses are not ascending, which looks suspicious
 			ret = WARN_MISS_ADDR_ORDER;
 		}
 
-		evt->prev_mod = EM_ADDR_MOD(wrd.addr);
+		evt->mod_cnt[mod] += 1;
+		evt->prev_mod = mod;
 	}
 
 
@@ -191,6 +202,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 	parser->prev = wrd;
 	parser->state = next_state;	
 	parser->ret_cnt[ret] += 1;
+	parser->word_cnt += 1; 
 
 	return ret;
 } 

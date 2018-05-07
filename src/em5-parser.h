@@ -103,10 +103,6 @@ static const char UNUSED * emword_class_str[] = {
 	, [WORD_DUP] = "DUPLICATE"
 };
 
-		
-
-
-
 struct em5_parser {
 	emword prev;  // previous word
 	unsigned last_sync_ts;  // last sync event timestamp

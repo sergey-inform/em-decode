@@ -118,6 +118,8 @@ Prints error counts and stats to errfile.
 	size_t bytes = 0;
 	emword wrd;
 	unsigned word_count;
+	unsigned mod_cnt_ok[EM_MAX_MODULE_NUM] = {0};  // valid events per module
+	unsigned mod_cnt_words_ok[EM_MAX_MODULE_NUM] = {0};  // valid events per module
 
 	struct em5_parser parser = {{0}};
 	enum em5_parser_ret ret;
@@ -147,6 +149,17 @@ Prints error counts and stats to errfile.
 				ts_prev = event.ts;
 				memset(&event, 0, sizeof(event));
 			}
+
+			// add word counters per module
+			if (!parser.evt.dirty) {
+				for (int i = 0; i<EM_MAX_MODULE_NUM; i++) {
+					if (parser.evt.mod_cnt[i]) {
+						mod_cnt_words_ok[i] += parser.evt.mod_cnt[i];
+						mod_cnt_ok[i] +=1;
+					}
+				}
+			}
+
 		}
 
 		wofft += 1;
@@ -165,25 +178,55 @@ Prints error counts and stats to errfile.
 		,"CNT_EM_EVENT_DIRTY"
 		, parser.dirty_cnt
 		);
+
+	/// Print module numbers
+	fprintf(errfile, "MODULES: ");
+	for (int i = 0; i<EM_MAX_MODULE_NUM; i++) {
+		if(mod_cnt_ok[i]) {
+			fprintf(errfile, "%d ", i);
+		}
+	}
+	fprintf(errfile, "\n");
+		
 	
-	/// Print word counters
+	/// Print error counters
 	fprintf(errfile, "-- Errors:\n");
 
 	word_count = 0;
 	for (int i = 0; i< MAX_EM5_PARSER_RET; i++) 
 		word_count += parser.ret_cnt[i];  //FIXME: use parser.word_cnt
 	
+	if (word_count != parser.word_cnt) {
+		fprintf(errfile, "WRONG WORD COUNT! %+d \n",
+				word_count - parser.word_cnt);
+	}
+
 	fprintf(errfile, "%-25s\t %d \n"
 		,"WORDS_TOTAL"
-		,word_count
+		,parser.word_cnt
 		);
 
-	for (int i = RET_ERROR + 1; i<MAX_EM5_PARSER_RET; i++) {
+	for (int i = RET_WARNING + 1; i<MAX_EM5_PARSER_RET; i++) {
 		if(em5_parser_retstr[i] && parser.ret_cnt[i])
 			fprintf(errfile, "%-25s\t %d \n"
 				, em5_parser_retstr[i]
 				, parser.ret_cnt[i]
 				);
+	}
+
+	/// Print module stats
+	if (args->stats) {
+		fprintf(errfile, "-- Stats:\n");
+		
+		for (int i = 0; i<EM_MAX_MODULE_NUM; i++) {
+			if(mod_cnt_ok[i]) {
+				fprintf(errfile, "MOD_%d: %d %d\n"
+					,i
+					,mod_cnt_ok[i]
+					,mod_cnt_words_ok[i]
+					);
+			}
+		}
 	}
 
 	fprintf(errfile, "\n");

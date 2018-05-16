@@ -125,6 +125,8 @@ Prints error counts and stats to errfile.
 	enum em5_parser_ret ret;
 
 	struct daq_event_info event = {0};
+	
+	struct daq_ts_info dts = {{0}};	
 	unsigned ts_prev = 0;	
 
 
@@ -142,12 +144,15 @@ Prints error counts and stats to errfile.
 			//
 			if (outfile) {
 				// fill struct
-				event.ts = parser.evt.ts;
+				//event.ts = parser.evt.ts;
+				dts.dts = parser.evt.ts - ts_prev;
+				ts_prev = parser.evt.ts;
 				// write to file
-				fwrite(&event, sizeof(event), 1, outfile);
+				//
+				fwrite(&dts, sizeof(dts), 1, outfile);
+				printf("%d %d\n", dts.dts, parser.evt.ts);
 				// clean up
-				ts_prev = event.ts;
-				memset(&event, 0, sizeof(event));
+				memset(&dts, 0, sizeof(dts));
 			}
 
 			// add word counters per module

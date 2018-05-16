@@ -13,6 +13,12 @@ enum daq_event_flags {
 };
 
 
+struct daq_ts_info {
+	uint32_t dts; 
+	uint8_t flags;
+	uint8_t xx;
+};
+
 struct daq_event_info {
 	uint32_t ts;  // timestamp
 	uint8_t flags; //

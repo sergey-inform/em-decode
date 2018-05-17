@@ -33,7 +33,7 @@ else:  # binary input
 # process data
 dt = [d['dt'] for d in data]
 
-def sync_dt(*arrays, reciprocal_accuracy=1024):  #FIXME: rename get_sync_dt
+def get_sync_dt(*arrays, reciprocal_accuracy=128*1024, jitter=2):
     """
         A simple timestamp synchronization.
 
@@ -48,6 +48,9 @@ def sync_dt(*arrays, reciprocal_accuracy=1024):  #FIXME: rename get_sync_dt
         
         PS: The complete triggerless timestamp synchronization requires 
         infinitly accurate clock or more complex mathematics. 
+
+        Return tuple: 
+            index, [offsets]
     """
 
     sizes = [len(x) for x in arrays]
@@ -74,21 +77,22 @@ def sync_dt(*arrays, reciprocal_accuracy=1024):  #FIXME: rename get_sync_dt
         
         while True:  # catch-up cycle
             min_ = min(accum)
-            max_ = min_ + min_ // reciprocal_accuracy
+            max_ = min_ + min_ // reciprocal_accuracy + jitter
   
-            fit_mask = [ x < max_ for x in accum]  # 
+            fit_mask = [ x <= max_ for x in accum]  # 
             
             if all(fit_mask):  # sync
-                yield idx, accum, offset
+                #yield idx, accum, offset
+                yield idx, offset
                 idx += 1
                 break
 
-#            elif idx == 0:  # special case, skip until first sync
-#                offset[:] = [offset[i]+1 for i in enum]
-#                break
+            elif idx == 0:  # special case, skip until first sync
+                offset[:] = [offset[i]+1 for i in enum]
+                break
 
             else:  # unsync, try to catch up
-#                yield [accum[i] if fit_mask[i] else None for i in enum] # unsync
+                #yield [accum[i] if fit_mask[i] else None for i in enum] # unsync
 
                 for i,x in enumerate(fit_mask):
                     if x == True:
@@ -100,7 +104,13 @@ def sync_dt(*arrays, reciprocal_accuracy=1024):  #FIXME: rename get_sync_dt
                             raise e
             
 
-g = sync_dt(*dt)
+g = get_sync_dt(*dt)
 
-for a in g:
-    print(a)
+try:
+    cnt = sum(1 for ret in g)
+    print(cnt)
+
+except IndexError:
+    print("unsync")
+    sys.exit(1)
+

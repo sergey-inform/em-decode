@@ -33,12 +33,12 @@ else:  # binary input
 # process data
 dt = [d['dt'] for d in data]
 
-def sync_dt(*arrays, reciprocal_accuracy=1024):
+def sync_dt(*arrays, reciprocal_accuracy=1024):  #FIXME: rename get_sync_dt
     """
         A simple timestamp synchronization.
 
         Generator, which consumes iterable (list,ndarray) with numbers
-        (timestamps or intervals between timestamps) and produces a list
+        (intervals between timestamps) and produces a list
         of matching numbers, Nones for not found matches.
 
         Method is robust and could find matches with given accuracy.
@@ -51,38 +51,54 @@ def sync_dt(*arrays, reciprocal_accuracy=1024):
     """
 
     sizes = [len(x) for x in arrays]
-   
+  
+    # TODO: use numpy and vector operations
+     
     offset = [0] * len(arrays)
-    accum  = [0] * len(arrays)
+    accum  = [0] * len(arrays)  # accumulator, to handle missing or extra events
+    idx = 0  # index for sync events
 
     enum = range(0, len(arrays))  # 0,1,2,3...
 
-    for idx in range(0, min(sizes)):
+    while True:
         try:
-            accum[:] = [ arrays[i][idx + offset[i]] for i in enum]
+            accum[:] = [ arrays[i][idx + offset[i]] for i in enum ]
         except IndexError:
-            break
+            # check all data has been processed
+            counts = [idx + offset[i] for i in enum]
+
+            if counts == sizes:
+                raise StopIteration()  # normal case
+            else:
+                raise IndexError("no more data")  # failed to sync
         
         while True:  # catch-up cycle
             min_ = min(accum)
             max_ = min_ + min_ // reciprocal_accuracy
   
             fit_mask = [ x < max_ for x in accum]  # 
-
-            if all(fit_mask):
+            
+            if all(fit_mask):  # sync
+                yield idx, accum, offset
+                idx += 1
                 break
-            else:  # unsync element found, try to catch up
-                yield [accum[i] if fit_mask[i] else None for i in enum], offset
+
+#            elif idx == 0:  # special case, skip until first sync
+#                offset[:] = [offset[i]+1 for i in enum]
+#                break
+
+            else:  # unsync, try to catch up
+#                yield [accum[i] if fit_mask[i] else None for i in enum] # unsync
 
                 for i,x in enumerate(fit_mask):
                     if x == True:
                         offset[i] += 1
-                        accum[i] += arrays[i][idx + offset[i]]
+                        try:
+                            accum[i] += arrays[i][idx + offset[i]]
+                        except IndexError as e:
+                            e.args = ["failed to sync"]
+                            raise e
             
-        yield idx, accum,  offset
-        
-    raise StopIteration()
-
 
 g = sync_dt(*dt)
 

@@ -14,14 +14,14 @@ enum daq_event_flags {
 };
 
 
-struct daq_raw_idx {
+struct daq_raw_idx {  // .idx files
 	uint16_t dts;  // timestamp delta
 	uint8_t flags:4;  //flags: 
 	uint16_t doff_t:12;  // words offset delta
 }__attribute__((packed));
 
 
-
+//TODO: rename daq_event_idx   (.evt)
 struct daq_event_info {
 	uint32_t ts;  // timestamp
 	uint8_t flags; //

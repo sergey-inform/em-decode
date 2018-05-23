@@ -5,7 +5,7 @@
 #include "em5-parser.h"
 
 
-enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
+enum em5_parser_ret mwpc_parser_next(struct em5_parser * parser, emword wrd)
 
 {
 	enum em5_parser_ret ret = RET_OK;

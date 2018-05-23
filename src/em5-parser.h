@@ -11,7 +11,6 @@
 #include "em.h"
 #include <stdbool.h>
 
-
 enum em5_parser_ret{
 	RET_OK
 	, RET_EVENT
@@ -68,36 +67,31 @@ static const char UNUSED * em5_protocol_state_str[] = {
 	, [PCH_END] = "END"
 	};
 
-//enum event_epoch {
-//	PRESPILL, 
-//	SPILL,  // readout during beam spill
-//	POSTSPILL  // readout after beam spill (LED or PED events)
-//	};
-
-
 enum emword_class {
-	WORD_END_SPILL
+	WORD_UNKNOWN
+	, WORD_BEGIN_SPILL
+	, WORD_END_SPILL
 	, WORD_BEGIN_EVENT
 	, WORD_BEGIN_ENUM
 	, WORD_STAT_1F
 	, WORD_END_EVENT
 	, WORD_DATA
 	, WORD_SYNC
-	, WORD_UNKNOWN
 	, WORD_ZERO
 	, WORD_ONES
 	, WORD_DUP	
 	};
 
 static const char UNUSED * emword_class_str[] = {
-	[WORD_END_SPILL] = "ES"
+	[WORD_UNKNOWN] = "UNKNOWN"
+	, [WORD_BEGIN_SPILL] = "BS"
+	, [WORD_END_SPILL] = "ES"
 	, [WORD_BEGIN_EVENT] = "EVENT"
 	, [WORD_BEGIN_ENUM] = "ENUM"
 	, [WORD_STAT_1F] = "STAT"
 	, [WORD_END_EVENT] = "END"
 	, [WORD_DATA] = "DATA"
 	, [WORD_SYNC] = "SYNC"
-	, [WORD_UNKNOWN] = "UNKNOWN"
 	, [WORD_ZERO] = "ZERO"
 	, [WORD_ONES] = "ONES"
 	, [WORD_DUP] = "DUPLICATE"
@@ -107,7 +101,7 @@ struct em5_parser {
 	emword prev;  // previous word
 	unsigned last_sync_ts;  // last sync event timestamp
 	enum em5_protocol_state state;  // current readout protocol
-//	enum event_epoch epoch;
+	unsigned prev_evt_ts;  // timestamp of a previous event
 	struct em5_parser_event_info {
 		unsigned ts;  // timestamp
 		unsigned len; // length in words
@@ -118,7 +112,6 @@ struct em5_parser {
 		unsigned mod_offt[EM_MAX_MODULE_NUM];  // event data offset
 		unsigned mod_cnt[EM_MAX_MODULE_NUM];  // word counter per module
 		} evt; 
-
 	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // return value counters
 	unsigned word_cnt;  // word counter since init
 	unsigned evt_cnt;  // event_counter

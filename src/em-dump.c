@@ -18,7 +18,7 @@
 #include <inttypes.h>
 #include <sysexits.h>
 
-#include "em5-parser.h"
+#include "parser-em5.h"
 #include "uDAQ.h"
 #include "gzopen.h"
 
@@ -106,8 +106,8 @@ Prints errors/debug info to outfile.
 	size_t bytes = 0;
 	emword wrd;
 
-	struct em5_parser parser = {{0}};
-	enum em5_parser_ret ret;
+	struct parser_em5 parser = {{0}};
+	enum parser_em5_ret ret;
 	int len_diff;
 	unsigned errcnt = 0;
 	
@@ -126,7 +126,7 @@ Prints errors/debug info to outfile.
 			break;
 		}
 		
-		ret = em5_parser_next(&parser, wrd);
+		ret = parser_em5_next(&parser, wrd);
 
 		// Specify comment
 		if (ret == ERR_MISS_LEN) {
@@ -150,7 +150,7 @@ Prints errors/debug info to outfile.
 						,wrd.addr
 						,prwidth  // field width
 						,"."
-						,em5_parser_retstr[ret]
+						,parser_em5_retstr[ret]
 						,comment
 						);
 				else  // decode hex as dec
@@ -161,7 +161,7 @@ Prints errors/debug info to outfile.
 						,EM_ADDR_MOD(wrd.addr)
 						,EM_ADDR_CHAN(wrd.addr)
 						,wrd.data
-						,em5_parser_retstr[ret]
+						,parser_em5_retstr[ret]
 						,comment
 						);
 		
@@ -172,7 +172,7 @@ Prints errors/debug info to outfile.
 					,wrd.addr
 					,prwidth  // field width
 					,em5_protocol_state_str[parser.state]
-					,ret != RET_OK && ret != RET_EVENT ? em5_parser_retstr[ret] : parser.evt.dirty ? "X" : "-"
+					,ret != RET_OK && ret != RET_EVENT ? parser_em5_retstr[ret] : parser.evt.dirty ? "X" : "-"
 					,comment
 					);
 		}

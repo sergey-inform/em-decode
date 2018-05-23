@@ -15,7 +15,7 @@
 #include <sysexits.h>
 #include <assert.h>
 
-#include "em5-parser.h"
+#include "parser-em5.h"
 #include "uDAQ.h"
 #include "gzopen.h"
 
@@ -120,8 +120,8 @@ Prints error counts and stats to errfile.
 	unsigned mod_cnt_ok[EM_MAX_MODULE_NUM] = {0};  // valid events per module
 	unsigned mod_cnt_words_ok[EM_MAX_MODULE_NUM] = {0};  // valid events per module
 
-	struct em5_parser parser = {{0}};
-	enum em5_parser_ret ret;
+	struct parser_em5 parser = {{0}};
+	enum parser_em5_ret ret;
 
 	struct daq_event_info event = {0};
 	
@@ -136,7 +136,7 @@ Prints error counts and stats to errfile.
 			break;
 		}
 		
-		ret = em5_parser_next(&parser, wrd);
+		ret = parser_em5_next(&parser, wrd);
 		
 		if (ret == RET_EVENT) {
 			// output struct event_info to outfile
@@ -171,9 +171,9 @@ Prints error counts and stats to errfile.
 
 	/// Print event counters
 	for (int i = RET_EVENT; i<RET_WARNING; i++) {
-		if(em5_parser_retstr[i] && parser.ret_cnt[i])
+		if(parser_em5_retstr[i] && parser.ret_cnt[i])
 			fprintf(errfile, "%s\t %d \n"
-				, em5_parser_retstr[i]
+				, parser_em5_retstr[i]
 				, parser.ret_cnt[i]
 				);
 	}
@@ -211,9 +211,9 @@ Prints error counts and stats to errfile.
 		);
 
 	for (int i = RET_WARNING + 1; i<MAX_EM5_PARSER_RET; i++) {
-		if(em5_parser_retstr[i] && parser.ret_cnt[i])
+		if(parser_em5_retstr[i] && parser.ret_cnt[i])
 			fprintf(errfile, "%-25s\t %d \n"
-				, em5_parser_retstr[i]
+				, parser_em5_retstr[i]
 				, parser.ret_cnt[i]
 				);
 	}

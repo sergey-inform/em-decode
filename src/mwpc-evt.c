@@ -1,7 +1,11 @@
 /**
- * Parse EuroMISS raw data, output binary event_raw_idx structs for further processing.
+ * Parse Epicur MWPC (multi wire proportional chambers)
+ * raw data, output binary daq_evt_idx structs.
  *
- * Autor: Sergey Ryzhikov <sergey.ryzhikov@ihep.ru>, Nov 2017
+ * In present Epicur format is based on EuroMISS data format
+ * (which is a subject of further discussion).
+ *
+ * Autor: Sergey Ryzhikov <sergey.ryzhikov@ihep.ru>, May 2018
  * Made for SPASCHARM experiment.
  */
 
@@ -15,15 +19,16 @@
 #include <sysexits.h>
 #include <assert.h>
 
-#include "em5-parser.h"
+#include "parser-em5.h"
 #include "uDAQ.h"
 #include "gzopen.h"
 
+//TODO: common main function for all small programms
 
-const char *argp_program_version = "em-idx 2.0";
+const char *argp_program_version = "mwpc-evt 2.0";
 const char *argp_program_bug_address = "\"Sergey Ryzhikov\" <sergey.ryzhikov@ihep.ru>";
-static char doc[] = "\nParse EuroMISS raw data file, " \
-	"output valid em_raw_idx structures to stdout, print error counts and stats to stderr.\n";
+static char doc[] = "\nParse raw data for Epicur MWPC (multiwire proportional chambers), " \
+	"output valid daq_evt_idx structures to stdout, print error counts and stats to stderr.\n";
 
 static char args_doc[] = "[FILENAME]";
 
@@ -31,38 +36,24 @@ static struct argp_option options[] = {
 	{0,0,0,0, "If no FILENAME, waits for data in stdin." },
 	{0,0,0,0, "Options:" },
 	{ "output", 'o', "OUTFILE", 0, "Instead of stdout, output events to OUTFILE."},
-	{ "stats", 's', 0, 0, "Print error statistics per module."}, //TODO
+//	{ "stats", 's', 0, 0, "Print some statistics per channel."}, //TODO
 	{ 0 } 
 };
 
 struct args {
 	char *infile;
 	char *outfile;
-	unsigned crate_id;
-	bool stats;
+//	bool stats;
 };
 
 
 static error_t 
 parse_opt(int key, char *arg, struct argp_state *state)
 {
-	long crate_id;
-
 	struct args *args = state->input;
 	switch (key) {
-		case 's': args->stats = true; break;
+//		case 's': args->stats = true; break;
 		case 'o': args->outfile = arg; break;
-		case 'c': 
-			crate_id = strtol(arg, NULL, 0 /*base*/);
-			// check CrateID is valid
-			if (crate_id < 0) {
-				argp_failure(state, EX_USAGE, EINVAL,
-					"CrateID should be unsigned integer"\
-					", but '%s' is given.",	arg);
-				break;
-			}
-			args->crate_id = (unsigned int)crate_id;
-			break;
 
 		case ARGP_KEY_NO_ARGS:
 			// stdin by default;
@@ -88,46 +79,22 @@ parse_opt(int key, char *arg, struct argp_state *state)
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
 
-void dump_args( struct args * args) 
-/** Print command line args */
-{
-	fprintf(stderr,
-		"outfile %s \n" \
-		"infile %s \n" \
-		"CrateId %d \n" \
-		"flags: %s \n" 
-		, args->outfile
-		, args->infile
-		, args->crate_id
-		, args->stats ? "stats ": ""
-		);
-
-	printf("\n");
-	fflush(stderr);
-}
-
-
-int em_parse( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
-/** Process data with em5 state machine. 
-Generates daq_event_info structures and put them to outfile.
-Prints error counts and stats to errfile.
+int mwpc_parse( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
+/** Since the data format is based on EuroMISS,
+ * process data with em5 state machine. 
+ *
+ * Generates daq_evt_idx structures and put them to outfile.
+ * Prints error counts and stats to errfile.
 */
 {
-	size_t wofft = 0;
-	size_t bytes = 0;
+	size_t bytes;
 	emword wrd;
-	unsigned word_count;
-	unsigned mod_cnt_ok[EM_MAX_MODULE_NUM] = {0};  // valid events per module
-	unsigned mod_cnt_words_ok[EM_MAX_MODULE_NUM] = {0};  // valid events per module
+	unsigned wofft_prev = 0;
 
-	struct em5_parser parser = {{0}};
-	enum em5_parser_ret ret;
+	struct parser_em5 parser = {{0}};
+	enum parser_em5_ret ret;
 
-	struct daq_event_info event = {0};
-	
-	struct daq_ts_info dts = {{0}};	
-	unsigned ts_prev = 0;	
-
+	struct daq_evt_idx evt_idx = {0};
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
@@ -136,104 +103,31 @@ Prints error counts and stats to errfile.
 			break;
 		}
 		
-		ret = em5_parser_next(&parser, wrd);
+		ret = parser_em5_next(&parser, wrd);
 		
 		if (ret == RET_EVENT) {
-			// output struct event_info to outfile
-			//
+
+			// fix bug with LEN_1F
+			if (parser.evt.len == parser.evt.len_1f + 1) {
+				parser.evt.dirty = false;
+			}
+
 			if (outfile) {
 				// fill struct
-				//event.ts = parser.evt.ts;
-				dts.dts = parser.evt.ts - ts_prev;
-				ts_prev = parser.evt.ts;
+				evt_idx.flags |= parser.evt.dirty ? DAQ_EVENT_DIRTY : 0;
+				//TODO: evt_idx.flags |= parser.evt.err...
+
+				evt_idx.dwoff = parser.evt.woff - wofft_prev;
+				wofft_prev = parser.evt.woff;
+
+///				fprintf(stdout, "%d\t%d\n", parser.evt.ts, evt_idx.dwoff);
 				// write to file
-				//
-				fwrite(&dts, sizeof(dts), 1, outfile);
-				printf("%d %d\n", dts.dts, parser.evt.ts);
+				fwrite(&evt_idx, sizeof(evt_idx), 1, outfile);
 				// clean up
-				memset(&dts, 0, sizeof(dts));
-			}
-
-			// add word counters per module
-			if (!parser.evt.dirty) {
-				for (int i = 0; i<EM_MAX_MODULE_NUM; i++) {
-					if (parser.evt.mod_cnt[i]) {
-						mod_cnt_words_ok[i] += parser.evt.mod_cnt[i];
-						mod_cnt_ok[i] +=1;
-					}
-				}
-			}
-
-		}
-
-		wofft += 1;
-	}
-
-	/// Print event counters
-	for (int i = RET_EVENT; i<RET_WARNING; i++) {
-		if(em5_parser_retstr[i] && parser.ret_cnt[i])
-			fprintf(errfile, "%s\t %d \n"
-				, em5_parser_retstr[i]
-				, parser.ret_cnt[i]
-				);
-	}
-
-	fprintf(errfile, "%s\t %d \n"	
-		,"CNT_EM_EVENT_DIRTY"
-		, parser.dirty_cnt
-		);
-
-	/// Print module numbers
-	fprintf(errfile, "MODULES: ");
-	for (int i = 0; i<EM_MAX_MODULE_NUM; i++) {
-		if(mod_cnt_ok[i]) {
-			fprintf(errfile, "%d ", i);
-		}
-	}
-	fprintf(errfile, "\n");
-		
-	
-	/// Print error counters
-	fprintf(errfile, "-- Errors:\n");
-
-	word_count = 0;
-	for (int i = 0; i< MAX_EM5_PARSER_RET; i++) 
-		word_count += parser.ret_cnt[i];  //FIXME: use parser.word_cnt
-	
-	if (word_count != parser.word_cnt) {
-		fprintf(errfile, "WRONG WORD COUNT! %+d \n",
-				word_count - parser.word_cnt);
-	}
-
-	fprintf(errfile, "%-25s\t %d \n"
-		,"WORDS_TOTAL"
-		,parser.word_cnt
-		);
-
-	for (int i = RET_WARNING + 1; i<MAX_EM5_PARSER_RET; i++) {
-		if(em5_parser_retstr[i] && parser.ret_cnt[i])
-			fprintf(errfile, "%-25s\t %d \n"
-				, em5_parser_retstr[i]
-				, parser.ret_cnt[i]
-				);
-	}
-
-	/// Print module stats
-	if (args->stats) {
-		fprintf(errfile, "-- Stats:\n");
-		
-		for (int i = 0; i<EM_MAX_MODULE_NUM; i++) {
-			if(mod_cnt_ok[i]) {
-				fprintf(errfile, "MOD_%d: %d %d\n"
-					,i
-					,mod_cnt_ok[i]
-					,mod_cnt_words_ok[i]
-					);
+				memset(&evt_idx, 0, sizeof(evt_idx));
 			}
 		}
 	}
-
-	fprintf(errfile, "\n");
 
 	return 0; 
 }
@@ -248,7 +142,6 @@ int main(int argc, char *argv[])
 
 	args.outfile = "-";  // default
 	argp_parse(&argp, argc, argv, 0, 0, &args);
-	//dump_args(&args);
 	
 	// outfile
 	if ( !strcmp(args.outfile, "-") ) {  // output to stdout
@@ -274,7 +167,7 @@ int main(int argc, char *argv[])
 		error(EX_IOERR, errno, "can't open file '%s'", args.infile);	
 
 	if (infile && outfile)
-		err = em_parse(infile, outfile, stderr, &args);
+		err = mwpc_parse(infile, outfile, stderr, &args);
 	
 
 	return err;

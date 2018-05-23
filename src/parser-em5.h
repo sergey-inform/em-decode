@@ -11,7 +11,7 @@
 #include "em.h"
 #include <stdbool.h>
 
-enum em5_parser_ret{
+enum parser_em5_ret{
 	RET_OK
 	, RET_EVENT
 	, RET_SYNC
@@ -31,7 +31,7 @@ enum em5_parser_ret{
 	};
 
 
-static const char UNUSED *em5_parser_retstr[] = {
+static const char UNUSED *parser_em5_retstr[] = {
 	[RET_OK] = "-"
 	, [RET_EVENT] = "CNT_EM_EVENT"
 	, [RET_SYNC] = "CNT_EM_SYNC_EVENT"
@@ -97,20 +97,24 @@ static const char UNUSED * emword_class_str[] = {
 	, [WORD_DUP] = "DUPLICATE"
 };
 
-struct em5_parser {
+struct parser_em5 {
 	emword prev;  // previous word
 	unsigned last_sync_ts;  // last sync event timestamp
 	enum em5_protocol_state state;  // current readout protocol
 	unsigned prev_evt_ts;  // timestamp of a previous event
-	struct em5_parser_event_info {
+	struct parser_em5_event_info {
 		unsigned ts;  // timestamp
 		unsigned len; // length in words
 		unsigned len_1f; // length according to MISS
 		unsigned prev_mod;  // previous module position number
 		unsigned cnt;  // event word counter
 		bool dirty; // event is dirty
-		unsigned mod_offt[EM_MAX_MODULE_NUM];  // event data offset
-		unsigned mod_cnt[EM_MAX_MODULE_NUM];  // word counter per module
+		bool err_ovf; // overflow error during readout
+		bool err_to;  // timeout error during readout
+		bool err_miss;  // general miss error
+		unsigned woff;  //offset in words
+		unsigned mod_offt[EM_MAX_MODULE_NUM];  // event data offset FIXME:del
+		unsigned mod_cnt[EM_MAX_MODULE_NUM];  // word counter per module  FIXME:del
 		} evt; 
 	unsigned ret_cnt[MAX_EM5_PARSER_RET];  // return value counters
 	unsigned word_cnt;  // word counter since init
@@ -118,6 +122,6 @@ struct em5_parser {
 	unsigned dirty_cnt;  // dirty events couner
 	};
 
-enum em5_parser_ret em5_parser_next(struct em5_parser *, emword);
+enum parser_em5_ret parser_em5_next(struct parser_em5 *, emword);
 
 #endif /* EM5_PARSER_H */

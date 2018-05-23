@@ -2,18 +2,18 @@
 #include <string.h>  // memset
 
 #include "em.h"
-#include "em5-parser.h"
+#include "parser-em5.h"
 
 
-enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
+enum parser_em5_ret parser_em5_next(struct parser_em5 * parser, emword wrd)
 
 {
-	enum em5_parser_ret ret = RET_OK;
+	enum parser_em5_ret ret = RET_OK;
 	enum emword_class wrd_class = WORD_UNKNOWN;
 	enum em5_protocol_state next_state = NO_STATE;
 	bool append_data = false;  // if true, data is valid
 
-	struct em5_parser_event_info * evt = &(parser->evt);
+	struct parser_em5_event_info * evt = &(parser->evt);
 	int mod;
 
 
@@ -56,8 +56,9 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		case WORD_BEGIN_EVENT:
 		case WORD_BEGIN_ENUM:
 			parser->prev_evt_ts = evt->ts;  // save previous timestamp
-			memset(evt, 0, sizeof(struct em5_parser_event_info)); // flush
+			memset(evt, 0, sizeof(struct parser_em5_event_info)); // flush
 			evt->ts = wrd.data; //save timestamp low
+			evt->woff = parser->word_cnt;
 			
 			if (wrd_class == WORD_BEGIN_EVENT) {
 				next_state = PCHI_BEGIN;
@@ -102,7 +103,7 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 			ret = RET_OK;
 			//nobreak
 
-		case WORD_DATA:
+		case WORD_DATA:  // the first data word in event
 			next_state = PCH_DATA;
 			append_data = true;
 			break;
@@ -187,7 +188,6 @@ enum em5_parser_ret em5_parser_next(struct em5_parser * parser, emword wrd)
 		evt->mod_cnt[mod] += 1;
 		evt->prev_mod = mod;
 	}
-
 
 	if (ret >= RET_ERROR && !evt->dirty) {  // if not dirty already
 		parser->dirty_cnt += 1;

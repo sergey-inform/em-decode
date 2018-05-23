@@ -5,6 +5,7 @@
 #include <inttypes.h>
 
 #define DAQ_EVENT_INFO_SZ	12  //FIXME
+#define DAQ_FILE_IDX_SZ		4
 
 enum daq_event_flags {
 	DAQ_EVENT_DATA	= 1 << 0,  // if true, offset is actually a data
@@ -13,11 +14,13 @@ enum daq_event_flags {
 };
 
 
-struct daq_ts_info {
-	uint32_t dts; 
-	uint8_t flags;
-	uint8_t xx;
-};
+struct daq_raw_idx {
+	uint16_t dts;  // timestamp delta
+	uint8_t flags:4;  //flags: 
+	uint16_t doff_t:12;  // words offset delta
+}__attribute__((packed));
+
+
 
 struct daq_event_info {
 	uint32_t ts;  // timestamp
@@ -35,6 +38,8 @@ struct daq_event_info {
 
 // Static assert
 char event_size_assertion[sizeof(struct daq_event_info) == DAQ_EVENT_INFO_SZ ? 1 : -1];
+char event_size_assertion[sizeof(struct daq_raw_idx) == DAQ_FILE_IDX_SZ ? 1 : -1];
+
 
 
 

@@ -110,6 +110,7 @@ void dump_args( struct args * args)
 
 int em_parse( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
 /** Process data with em5 state machine. 
+Generates daq_event_info structures and put them to outfile.
 Prints error counts and stats to errfile.
 */
 {
@@ -125,7 +126,7 @@ Prints error counts and stats to errfile.
 
 	struct daq_event_info event = {0};
 	
-	struct daq_raw_idx dts = {{0}};	
+	struct daq_ts_info dts = {{0}};	
 	unsigned ts_prev = 0;	
 
 

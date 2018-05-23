@@ -33,7 +33,7 @@ else:  # binary input
 # process data
 dt = [d['dt'] for d in data]
 
-def get_sync_dt(*arrays, reciprocal_accuracy=128*1024, jitter=2):
+def get_sync_dt(*arrays, reciprocal_accuracy=4*1024, jitter=2):
     """
         A simple timestamp synchronization.
 
@@ -82,8 +82,8 @@ def get_sync_dt(*arrays, reciprocal_accuracy=128*1024, jitter=2):
             fit_mask = [ x <= max_ for x in accum]  # 
             
             if all(fit_mask):  # sync
-                #yield idx, accum, offset
-                yield idx, offset
+                yield idx, accum, offset
+                #yield idx, offset
                 idx += 1
                 break
 
@@ -92,7 +92,7 @@ def get_sync_dt(*arrays, reciprocal_accuracy=128*1024, jitter=2):
                 break
 
             else:  # unsync, try to catch up
-                #yield [accum[i] if fit_mask[i] else None for i in enum] # unsync
+                yield [accum[i] if fit_mask[i] else None for i in enum] # unsync
 
                 for i,x in enumerate(fit_mask):
                     if x == True:
@@ -106,8 +106,12 @@ def get_sync_dt(*arrays, reciprocal_accuracy=128*1024, jitter=2):
 
 g = get_sync_dt(*dt)
 
+cnt=0
 try:
-    cnt = sum(1 for ret in g)
+    for a in g:
+        cnt +=1
+        print(a)
+    
     print(cnt)
 
 except IndexError:

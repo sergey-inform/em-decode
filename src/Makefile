@@ -18,6 +18,9 @@ all: $(TARGETS)
 em-ts: em-ts.o $(OBJS)
 	$(CC) $(CFLAGS)  $^ -o $@
 
+em-count: em-count.o $(OBJS)
+	$(CC) $(CFLAGS)  $^ -o $@
+
 em-dump: em-dump.o $(OBJS)
 	$(CC) $(CFLAGS)  $^ -o $@
 

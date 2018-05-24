@@ -86,6 +86,7 @@ int em_ts( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
 
 	unsigned bytes;
 	unsigned count = 0;
+	unsigned ts;
 	unsigned ts_prev = 0;
 	unsigned outval;
 	unsigned long long diff_summ=0;
@@ -105,13 +106,14 @@ int em_ts( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
 
 		if (!outfile) 
 			continue;
+		ts = parser.evt.ts;
 
 		if (args->diff) {
-			outval = parser.evt.ts - ts_prev;
+			outval = ts - ts_prev;
 			diff_summ += outval;
-			ts_prev = parser.evt.ts;
+			ts_prev = ts;
 		} else {
-			outval = parser.evt.ts;	
+			outval = ts;	
 		}
 
 		if (args->text) {
@@ -120,8 +122,10 @@ int em_ts( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
 			fwrite(&outval, sizeof(outval), 1, outfile); 
 		}
 	}
+	//last check
+	if (args->diff && ts != diff_summ) 
+		return -1;
 
-		printf(". %lld %d\n", diff_summ , parser.evt.ts);
 	return 0; 
 }
 

@@ -4,10 +4,13 @@ import numpy as np
 from matplotlib import pyplot as plt
 import sys
 
-filename = sys.argv[1]
+if len(sys.argv) > 1:
+    filename = sys.argv[1]
+else:
+    filename = sys.stdin
 
 vals = np.loadtxt(filename, dtype=int)
-svals = sorted(vals)
+svals = sorted(vals)[:-1]
 
 #c,b, p = plt.hist(svals, bins='fd', normed=False, range=(0,50000) )
 c,b, p = plt.hist(svals, bins='fd', normed=False )

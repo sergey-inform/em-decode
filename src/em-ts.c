@@ -1,9 +1,5 @@
 /**
- * Parse Epicur MWPC (multi wire proportional chambers)
- * raw data, output binary daq_evt_idx structs.
- *
- * In present Epicur format is based on EuroMISS data format
- * (which is a subject of further discussion).
+ * Parse EuroMISS raw data for timestamps.
  *
  * Autor: Sergey Ryzhikov <sergey.ryzhikov@ihep.ru>, May 2018
  * Made for SPASCHARM experiment.
@@ -23,27 +19,29 @@
 #include "uDAQ.h"
 #include "gzopen.h"
 
-//TODO: common main function for all small programms
 
-const char *argp_program_version = "mwpc-evt 2.0";
+const char *argp_program_version = "em-ts 2.0";
 const char *argp_program_bug_address = "\"Sergey Ryzhikov\" <sergey.ryzhikov@ihep.ru>";
-static char doc[] = "\nParse raw data for Epicur MWPC (multiwire proportional chambers), " \
-	"output valid daq_evt_idx structures to stdout, print error counts and stats to stderr.\n";
+static char doc[] = "\nParse EuroMISS raw data file, " \
+	"extract timestamps or timestamp diffs in binary or text form.\n" \
+	"timestamps are 32-bit unsigned ints\n";
 
 static char args_doc[] = "[FILENAME]";
 
 static struct argp_option options[] = { 
 	{0,0,0,0, "If no FILENAME, waits for data in stdin." },
 	{0,0,0,0, "Options:" },
-	{ "output", 'o', "OUTFILE", 0, "Instead of stdout, output events to OUTFILE."},
-//	{ "stats", 's', 0, 0, "Print some statistics per channel."}, //TODO
+	{ "outfile", 'o', "FILENAME", 0, "Direct output to OUTFILE instead of stdout."},
+	{ "diff", 'd', 0, 0, "Timestamp diffs (current minus previous) instead of timestamp."},
+	{ "text", 't', 0, 0, "Text output instead of binary."},
 	{ 0 } 
 };
 
 struct args {
 	char *infile;
 	char *outfile;
-//	bool stats;
+	bool diff;
+	bool text;
 };
 
 
@@ -52,7 +50,8 @@ parse_opt(int key, char *arg, struct argp_state *state)
 {
 	struct args *args = state->input;
 	switch (key) {
-//		case 's': args->stats = true; break;
+		case 'd': args->diff = true; break;
+		case 't': args->text = true; break;
 		case 'o': args->outfile = arg; break;
 
 		case ARGP_KEY_NO_ARGS:
@@ -79,23 +78,17 @@ parse_opt(int key, char *arg, struct argp_state *state)
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
 
-int mwpc_parse( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
-/** Since the data format is based on EuroMISS,
- * process data with em5 state machine. 
- *
- * Generates daq_evt_idx structures and put them to outfile.
- * Prints error counts and stats to errfile.
-*/
+int em_ts( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
 {
-	size_t bytes;
 	emword wrd;
-	unsigned wofft_prev = 0;
-	unsigned cnt = 0;
-
 	struct parser_em5 parser = {{0}};
 	enum parser_em5_ret ret;
 
-	struct daq_evt_idx evt_idx = {0};
+	unsigned bytes;
+	unsigned count = 0;
+	unsigned ts_prev = 0;
+	unsigned outval;
+	unsigned long long diff_summ=0;
 
 	while ((bytes = fread(&wrd, 1 /*count*/, sizeof(emword), infile)))
 	{
@@ -105,34 +98,30 @@ int mwpc_parse( FILE * infile, FILE * outfile, FILE * errfile, struct args * arg
 		}
 		
 		ret = parser_em5_next(&parser, wrd);
-		
-		if (ret == RET_EVENT) {
+		if (ret != RET_EVENT)
+			continue;
 
-			cnt += 1;
-			
-			// fix bug with LEN_1F
-			if (parser.evt.len == parser.evt.len_1f + 1) {
-				parser.evt.dirty = false;
-			}
-			
-			if (outfile) {
-				// fill struct
-				evt_idx.flags |= parser.evt.dirty ? DAQ_EVENT_DIRTY : 0;
-				//TODO: evt_idx.flags |= parser.evt.err...
+		count += 1;
 
-				evt_idx.dwoff = parser.evt.woff - wofft_prev;
-				wofft_prev = parser.evt.woff;
+		if (!outfile) 
+			continue;
 
-///				fprintf(stdout, "%d\t%d\n", parser.evt.ts, evt_idx.dwoff);
-				// write to file
-				fwrite(&evt_idx, sizeof(evt_idx), 1, outfile);
-				// clean up
-				memset(&evt_idx, 0, sizeof(evt_idx));
-			}
+		if (args->diff) {
+			outval = parser.evt.ts - ts_prev;
+			diff_summ += outval;
+			ts_prev = parser.evt.ts;
+		} else {
+			outval = parser.evt.ts;	
+		}
+
+		if (args->text) {
+			fprintf(outfile, "%u\n", outval);
+		} else {
+			fwrite(&outval, sizeof(outval), 1, outfile); 
 		}
 	}
-	printf("%d\n", cnt);
 
+		printf(". %lld %d\n", diff_summ , parser.evt.ts);
 	return 0; 
 }
 
@@ -149,7 +138,7 @@ int main(int argc, char *argv[])
 	
 	// outfile
 	if ( !strcmp(args.outfile, "-") ) {  // output to stdout
-		if (isatty(fileno(stdout))) {  // stdout printed on terminal
+		if (isatty(fileno(stdout)) && ! args.text) {  // binary printed on terminal
 			errno = EPIPE;
 			fprintf(stderr, "%s: Attempt to send binary output to terminal; %s\n",
                                         program_invocation_short_name, strerror (errno));
@@ -173,8 +162,7 @@ int main(int argc, char *argv[])
 		error(EX_IOERR, errno, "can't open file '%s'", args.infile);	
 
 	if (infile)
-		err = mwpc_parse(infile, outfile, stderr, &args);
+		err = em_ts(infile, outfile, stderr, &args);
 	
-
 	return err;
 }

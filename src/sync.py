@@ -17,13 +17,13 @@ args = parser.parse_args()
 files=args.file1 + args.file
 
 
-dtype = np.dtype( [('dt', '<u2'),('other', '<u2')])
+dtype = np.dtype( [('dt', '<u4'),])
 
 data = []
 
 if args.text:  # text input
     for f in files:
-        data.append(np.loadtxt(f, dtype=np.dtype([('dt', '<u4')]), usecols=(0)))
+        data.append(np.loadtxt(f, dtype=dtype, usecols=(0)))
 
 else:  # binary input
     for f in files:
@@ -56,9 +56,9 @@ def sync_dt(*arrays, jitter=3):
 
     return [1,2,3]
 
-g = sync_dt(*dt)
+#g = sync_dt(*dt)
 
-
+g = dt
 cnt=0
 try:
     for a in g:

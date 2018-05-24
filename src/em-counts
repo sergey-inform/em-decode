@@ -1,4 +1,0 @@
-#!/bin/sh
-
-SOURCE_DIR="$( cd "$( dirname $0)" && pwd )"
-"${SOURCE_DIR}/em-parse" 2>&1 "$@" -o /dev/null  # replace stdout with stderr

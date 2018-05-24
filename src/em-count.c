@@ -99,9 +99,7 @@ int main(int argc, char *argv[])
 
 	argp_parse(&argp, argc, argv, 0, 0, &args);
 	
-//	infile = gzopen(args.infile);
-
-	infile = fopen(args.infile, "r");
+	infile = gzopen(args.infile);
 	if (!infile) 
 		error(EX_IOERR, errno, "can't open file '%s'", args.infile);	
 

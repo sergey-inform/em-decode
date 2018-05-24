@@ -14,6 +14,7 @@
 #include <unistd.h> //dup
 #include <sysexits.h>
 #include <assert.h>
+#include <sys/stat.h>
 
 #include "parser-em5.h"
 #include "uDAQ.h"
@@ -77,6 +78,12 @@ parse_opt(int key, char *arg, struct argp_state *state)
 
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
+int same_file(int fd1, int fd2) {
+	struct stat stat1, stat2;
+	if(fstat(fd1, &stat1) < 0) return -1;
+	if(fstat(fd2, &stat2) < 0) return -1;
+	return (stat1.st_dev == stat2.st_dev) && (stat1.st_ino == stat2.st_ino);
+}
 
 int em_ts( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
 {
@@ -126,6 +133,9 @@ int em_ts( FILE * infile, FILE * outfile, FILE * errfile, struct args * args)
 	if (args->diff && ts != diff_summ) 
 		return -1;
 
+	
+	if (! same_file(fileno(outfile), fileno(stdout)))  // if outfile redirected 
+		printf("%u\n", count);  // print ts count
 	return 0; 
 }
 
